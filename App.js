@@ -1,5 +1,4 @@
-import React from "react";
-import Cabecalho from "./components/Cabecalho";
+import Cabecalho from "./src/front/components/Cabecalho";
 
 export default function App() {
   return <Cabecalho />;
