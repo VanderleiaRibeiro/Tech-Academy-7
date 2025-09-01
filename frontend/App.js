@@ -1,5 +1,6 @@
-import Cabecalho from "./src/components/Cabecalho";
+import React from "react";
+import Signup from "./src/telas/Signup";
 
 export default function App() {
-  return <Cabecalho />;
+  return <Signup />;
 }
