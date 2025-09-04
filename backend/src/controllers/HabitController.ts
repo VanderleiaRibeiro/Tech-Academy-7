@@ -4,12 +4,17 @@ import HabitRecordModel from "../models/HabitRecord";
 
 export const createHabit = async (req: Request, res: Response) => {
   try {
-    const { name, description, user_id } = req.body;
+    const { name, description } = req.body;
+    const user_id = (req as any).user?.id;
+
+    if (!user_id) return res.status(401).json({ error: "Unauthorized" });
+
     const habit = await HabitModel.create({
       name,
       description: description || null,
       user_id,
     });
+
     return res.status(201).json(habit);
   } catch (error) {
     console.error("createHabit error:", error);
@@ -17,15 +22,16 @@ export const createHabit = async (req: Request, res: Response) => {
   }
 };
 
-export const listUserHabits = async (
-  req: Request<{ userId: string }>,
-  res: Response
-) => {
+export const listUserHabits = async (_req: Request, res: Response) => {
   try {
+    const user_id = (_req as any).user?.id;
+    if (!user_id) return res.status(401).json({ error: "Unauthorized" });
+
     const habits = await HabitModel.findAll({
-      where: { user_id: req.params.userId },
+      where: { user_id },
       include: [HabitRecordModel],
     });
+
     return res.status(200).json(habits);
   } catch (error) {
     console.error("listUserHabits error:", error);
@@ -38,8 +44,20 @@ export const updateHabit = async (
   res: Response
 ) => {
   try {
-    const habit = await HabitModel.findByPk(req.params.id);
+    const habitId = Number(req.params.id);
+    console.log("updateHabit id param:", habitId);
+
+    const habit = await HabitModel.findByPk(habitId);
+    console.log("habit encontrado:", habit);
+
     if (!habit) return res.status(404).json({ error: "Habit not found" });
+
+    const user_id = (req as any).user?.id;
+    if (!user_id || habit.user_id !== user_id) {
+      return res
+        .status(403)
+        .json({ error: "Forbidden: cannot update this habit" });
+    }
 
     const { name, description } = req.body;
     if (name !== undefined) habit.name = name;
@@ -58,8 +76,17 @@ export const deleteHabit = async (
   res: Response
 ) => {
   try {
-    const habit = await HabitModel.findByPk(req.params.id);
+    const habitId = Number(req.params.id);
+    const habit = await HabitModel.findByPk(habitId);
+
     if (!habit) return res.status(404).json({ error: "Habit not found" });
+
+    const user_id = (req as any).user?.id;
+    if (!user_id || habit.user_id !== user_id) {
+      return res
+        .status(403)
+        .json({ error: "Forbidden: cannot delete this habit" });
+    }
 
     await habit.destroy();
     return res.status(204).send();
@@ -74,8 +101,17 @@ export const createHabitRecord = async (
   res: Response
 ) => {
   try {
-    const habit = await HabitModel.findByPk(req.params.habitId);
+    const habitId = Number(req.params.habitId);
+    const habit = await HabitModel.findByPk(habitId);
+
     if (!habit) return res.status(404).json({ error: "Habit not found" });
+
+    const user_id = (req as any).user?.id;
+    if (!user_id || habit.user_id !== user_id) {
+      return res
+        .status(403)
+        .json({ error: "Forbidden: cannot add record to this habit" });
+    }
 
     const { date, completed } = req.body;
     const record = await HabitRecordModel.create({
@@ -96,8 +132,20 @@ export const listHabitRecords = async (
   res: Response
 ) => {
   try {
+    const habitId = Number(req.params.habitId);
+    const habit = await HabitModel.findByPk(habitId);
+
+    if (!habit) return res.status(404).json({ error: "Habit not found" });
+
+    const user_id = (req as any).user?.id;
+    if (!user_id || habit.user_id !== user_id) {
+      return res
+        .status(403)
+        .json({ error: "Forbidden: cannot view records of this habit" });
+    }
+
     const records = await HabitRecordModel.findAll({
-      where: { habit_id: req.params.habitId },
+      where: { habit_id: habit.id },
     });
     return res.status(200).json(records);
   } catch (error) {
