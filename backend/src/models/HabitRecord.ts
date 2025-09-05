@@ -16,7 +16,12 @@ HabitRecord.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    habit_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+    habit_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+      references: { model: "habits", key: "id" }, // 🔑 FK
+      onDelete: "CASCADE",
+    },
     date: { type: DataTypes.DATEONLY, allowNull: false },
     completed: { type: DataTypes.BOOLEAN, defaultValue: true },
   },
