@@ -21,7 +21,7 @@ Habit.init(
     user_id: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      references: { model: "users", key: "id" }, // 🔑 FK
+      references: { model: "users", key: "id" },
       onDelete: "CASCADE",
     },
   },
