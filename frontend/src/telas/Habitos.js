@@ -1,4 +1,3 @@
-// frontend/src/telas/TelaHabito.js
 import React, { useState } from "react";
 import {
   View,
@@ -11,8 +10,8 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
-import { Cores } from "../constantes/Cores";
-import Cabecalho from "../componentes/Cabecalho";
+import { Cores } from "../constants/Colors";
+import Cabecalho from "../components/Cabecalho";
 
 const TelaHabito = ({ navegacao, route }) => {
   const { habito } = route.params || {};
@@ -29,7 +28,6 @@ const TelaHabito = ({ navegacao, route }) => {
       return;
     }
 
-    // Aqui você salvaria o hábito
     Alert.alert("Sucesso", "Hábito criado com sucesso!", [
       { texto: "OK", onPress: () => navegacao.goBack() },
     ]);
@@ -41,7 +39,6 @@ const TelaHabito = ({ navegacao, route }) => {
       return;
     }
 
-    // Aqui você atualizaria o hábito
     Alert.alert("Sucesso", "Hábito atualizado com sucesso!", [
       { texto: "OK", onPress: () => navegacao.goBack() },
     ]);
@@ -57,7 +54,6 @@ const TelaHabito = ({ navegacao, route }) => {
           texto: "Excluir",
           estilo: "destrutivo",
           onPress: () => {
-            // Aqui você excluiria o hábito
             Alert.alert("Sucesso", "Hábito excluído com sucesso!", [
               { texto: "OK", onPress: () => navegacao.goBack() },
             ]);

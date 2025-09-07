@@ -9,8 +9,8 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { styles } from "./styles";
-import Cabecalho from "../../components/Cabecalho";
+import { styles } from "./Loginstyles";
+import Cabecalho from "../../src/components/Cabecalho";
 
 export default function Login() {
   const [email, setEmail] = useState("");
