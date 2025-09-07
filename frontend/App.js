@@ -7,7 +7,7 @@ import Login from "./src/telas/Login";
 import Signup from "./src/telas/Signup";
 import Home from "./src/telas/Home/Home";
 import Habitos from "./src/telas/Habitos";
-import EditProfileScreen from "./src/telas/EditProfile/editProfile";
+import EditProfileScreen from "./src/telas/EditProfile/EditProfile";
 
 const Stack = createNativeStackNavigator();
 
