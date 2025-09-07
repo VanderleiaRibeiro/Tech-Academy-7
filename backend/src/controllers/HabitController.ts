@@ -1,39 +1,51 @@
 import { Request, Response } from "express";
+import { z } from "zod";
 import HabitModel from "../models/HabitModel";
 import HabitRecordModel from "../models/HabitRecord";
 
+const habitSchema = z.object({
+  name: z.string().trim().min(1, "Nome do hábito é obrigatório"),
+  description: z.string().trim().max(500).nullable().optional(),
+});
+
+const habitUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).optional(),
+    description: z.string().trim().max(500).nullable().optional(),
+  })
+  .strict();
+
+const habitRecordSchema = z.object({
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Data inválida, use formato ISO (YYYY-MM-DD)",
+  }),
+  completed: z.boolean().optional(),
+});
+
 export const createHabit = async (req: Request, res: Response) => {
   try {
-    const { name, description } = req.body;
     const user_id = (req as any).user?.id;
+    if (!user_id) return res.status(401).json({ error: "Não autorizado" });
 
-    if (!user_id) {
-      return res.status(401).json({ error: "Unauthorized" });
+    const parsed = habitSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: parsed.error.issues.map((e) => e.message) });
     }
 
-    if (!name || typeof name !== "string" || name.trim() === "") {
-      return res.status(400).json({ error: "Habit name is required" });
-    }
-
-    const habit = await HabitModel.create({
-      name,
-      description: description || null,
-      user_id,
-    });
-
+    const habit = await HabitModel.create({ ...parsed.data, user_id });
     return res.status(201).json(habit);
   } catch (error) {
-    console.error("createHabit error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Erro ao criar hábito:", error);
+    return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
 
 export const listUserHabits = async (req: Request, res: Response) => {
   try {
     const user_id = (req as any).user?.id;
-    if (!user_id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+    if (!user_id) return res.status(401).json({ error: "Não autorizado" });
 
     const habits = await HabitModel.findAll({
       where: { user_id },
@@ -42,8 +54,8 @@ export const listUserHabits = async (req: Request, res: Response) => {
 
     return res.status(200).json(habits);
   } catch (error) {
-    console.error("listUserHabits error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Erro ao listar hábitos:", error);
+    return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
 
@@ -53,33 +65,26 @@ export const updateHabit = async (
 ) => {
   try {
     const habitId = Number(req.params.id);
-    const user_id = (req as any).user?.id;
+    if (isNaN(habitId)) return res.status(400).json({ error: "ID inválido" });
 
-    if (!user_id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+    const user_id = (req as any).user?.id;
+    if (!user_id) return res.status(401).json({ error: "Não autorizado" });
 
     const habit = await HabitModel.findOne({ where: { id: habitId, user_id } });
+    if (!habit) return res.status(404).json({ error: "Hábito não encontrado" });
 
-    if (!habit) {
+    const parsed = habitUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
       return res
-        .status(404)
-        .json({ error: "Habit not found or you do not have permission" });
+        .status(400)
+        .json({ error: parsed.error.issues.map((e) => e.message) });
     }
 
-    const { name, description } = req.body;
-    if (name !== undefined) {
-      habit.name = name;
-    }
-    if (description !== undefined) {
-      habit.description = description;
-    }
-
-    await habit.save();
+    await habit.update(parsed.data);
     return res.status(200).json(habit);
   } catch (error) {
-    console.error("updateHabit error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Erro ao atualizar hábito:", error);
+    return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
 
@@ -89,25 +94,19 @@ export const deleteHabit = async (
 ) => {
   try {
     const habitId = Number(req.params.id);
-    const user_id = (req as any).user?.id;
+    if (isNaN(habitId)) return res.status(400).json({ error: "ID inválido" });
 
-    if (!user_id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+    const user_id = (req as any).user?.id;
+    if (!user_id) return res.status(401).json({ error: "Não autorizado" });
 
     const habit = await HabitModel.findOne({ where: { id: habitId, user_id } });
-
-    if (!habit) {
-      return res
-        .status(404)
-        .json({ error: "Habit not found or you do not have permission" });
-    }
+    if (!habit) return res.status(404).json({ error: "Hábito não encontrado" });
 
     await habit.destroy();
     return res.status(204).send();
   } catch (error) {
-    console.error("deleteHabit error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Erro ao excluir hábito:", error);
+    return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
 
@@ -117,35 +116,30 @@ export const createHabitRecord = async (
 ) => {
   try {
     const habitId = Number(req.params.habitId);
-    const user_id = (req as any).user?.id;
+    if (isNaN(habitId)) return res.status(400).json({ error: "ID inválido" });
 
-    if (!user_id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+    const user_id = (req as any).user?.id;
+    if (!user_id) return res.status(401).json({ error: "Não autorizado" });
 
     const habit = await HabitModel.findOne({ where: { id: habitId, user_id } });
+    if (!habit) return res.status(404).json({ error: "Hábito não encontrado" });
 
-    if (!habit) {
+    const parsed = habitRecordSchema.safeParse(req.body);
+    if (!parsed.success) {
       return res
-        .status(404)
-        .json({ error: "Habit not found or you do not have permission" });
-    }
-
-    const { date, completed } = req.body;
-    if (!date) {
-      return res.status(400).json({ error: "Date is required" });
+        .status(400)
+        .json({ error: parsed.error.issues.map((e) => e.message) });
     }
 
     const record = await HabitRecordModel.create({
       habit_id: habit.id,
-      date,
-      completed: completed ?? true,
+      ...parsed.data,
     });
 
     return res.status(201).json(record);
   } catch (error) {
-    console.error("createHabitRecord error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Erro ao criar registro de hábito:", error);
+    return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
 
@@ -155,26 +149,20 @@ export const listHabitRecords = async (
 ) => {
   try {
     const habitId = Number(req.params.habitId);
-    const user_id = (req as any).user?.id;
+    if (isNaN(habitId)) return res.status(400).json({ error: "ID inválido" });
 
-    if (!user_id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+    const user_id = (req as any).user?.id;
+    if (!user_id) return res.status(401).json({ error: "Não autorizado" });
 
     const habit = await HabitModel.findOne({ where: { id: habitId, user_id } });
-
-    if (!habit) {
-      return res
-        .status(404)
-        .json({ error: "Habit not found or you do not have permission" });
-    }
+    if (!habit) return res.status(404).json({ error: "Hábito não encontrado" });
 
     const records = await HabitRecordModel.findAll({
       where: { habit_id: habit.id },
     });
     return res.status(200).json(records);
   } catch (error) {
-    console.error("listHabitRecords error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Erro ao listar registros de hábito:", error);
+    return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
