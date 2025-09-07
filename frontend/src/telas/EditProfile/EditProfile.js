@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { styles } from "../EditProfile/styles";
+import { styles } from "./styles";
 import Cabecalho from "../../components/Cabecalho";
 
 export default function EditProfileScreen({ navigation }) {
