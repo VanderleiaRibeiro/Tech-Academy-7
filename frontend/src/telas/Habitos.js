@@ -1,4 +1,3 @@
-// frontend/src/telas/TelaHabito.js
 import React, { useState } from "react";
 import {
   View,
@@ -11,10 +10,10 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
-import { Cores } from "../constantes/Cores";
-import Cabecalho from "../componentes/Cabecalho";
+import { Colors } from "../constants/Colors";
+import Cabecalho from "../components/Cabecalho";
 
-const TelaHabito = ({ navegacao, route }) => {
+const TelaHabito = ({ navigation, route }) => {
   const { habito } = route.params || {};
   const estaEditando = !!habito;
 
@@ -28,10 +27,8 @@ const TelaHabito = ({ navegacao, route }) => {
       Alert.alert("Erro", "Por favor, informe um nome para o hábito");
       return;
     }
-
-    // Aqui você salvaria o hábito
     Alert.alert("Sucesso", "Hábito criado com sucesso!", [
-      { texto: "OK", onPress: () => navegacao.goBack() },
+      { text: "OK", onPress: () => navigation.goBack() },
     ]);
   };
 
@@ -40,10 +37,8 @@ const TelaHabito = ({ navegacao, route }) => {
       Alert.alert("Erro", "Por favor, informe um nome para o hábito");
       return;
     }
-
-    // Aqui você atualizaria o hábito
     Alert.alert("Sucesso", "Hábito atualizado com sucesso!", [
-      { texto: "OK", onPress: () => navegacao.goBack() },
+      { text: "OK", onPress: () => navigation.goBack() },
     ]);
   };
 
@@ -52,16 +47,14 @@ const TelaHabito = ({ navegacao, route }) => {
       "Excluir Hábito",
       "Tem certeza que deseja excluir este hábito?",
       [
-        { texto: "Cancelar", estilo: "cancelar" },
+        { text: "Cancelar", style: "cancel" },
         {
-          texto: "Excluir",
-          estilo: "destrutivo",
-          onPress: () => {
-            // Aqui você excluiria o hábito
+          text: "Excluir",
+          style: "destructive",
+          onPress: () =>
             Alert.alert("Sucesso", "Hábito excluído com sucesso!", [
-              { texto: "OK", onPress: () => navegacao.goBack() },
-            ]);
-          },
+              { text: "OK", onPress: () => navigation.goBack() },
+            ]),
         },
       ]
     );
@@ -77,7 +70,7 @@ const TelaHabito = ({ navegacao, route }) => {
           <TextInput
             style={estilos.entrada}
             placeholder="Ex: Beber água, Exercícios, etc."
-            placeholderTextColor={Cores.claro.icone}
+            placeholderTextColor={Colors.light.icon}
             value={nome}
             onChangeText={setNome}
           />
@@ -103,7 +96,7 @@ const TelaHabito = ({ navegacao, route }) => {
           <TextInput
             style={estilos.entrada}
             placeholder="Ex: 08:00"
-            placeholderTextColor={Cores.claro.icone}
+            placeholderTextColor={Colors.light.icon}
             value={horario}
             onChangeText={setHorario}
           />
@@ -114,7 +107,7 @@ const TelaHabito = ({ navegacao, route }) => {
           <TextInput
             style={[estilos.entrada, estilos.areaTexto]}
             placeholder="Descreva seu hábito..."
-            placeholderTextColor={Cores.claro.icone}
+            placeholderTextColor={Colors.light.icon}
             value={descricao}
             onChangeText={setDescricao}
             multiline
@@ -150,7 +143,7 @@ const TelaHabito = ({ navegacao, route }) => {
 const estilos = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Cores.claro.fundo,
+    backgroundColor: Colors.light.background,
   },
   conteudo: {
     flex: 1,
@@ -162,26 +155,26 @@ const estilos = StyleSheet.create({
   rotulo: {
     fontSize: 16,
     fontWeight: "600",
-    color: Cores.claro.texto,
+    color: Colors.light.text,
     marginBottom: 8,
   },
   entrada: {
-    backgroundColor: Cores.claro.fundoEntrada,
+    backgroundColor: "#f5f5f5",
     borderWidth: 1,
-    borderColor: Cores.claro.bordaEntrada,
+    borderColor: "#ccc",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: Cores.claro.texto,
+    color: Colors.light.text,
   },
   areaTexto: {
     minHeight: 100,
     textAlignVertical: "top",
   },
   containerSeletor: {
-    backgroundColor: Cores.claro.fundoEntrada,
+    backgroundColor: "#f5f5f5",
     borderWidth: 1,
-    borderColor: Cores.claro.bordaEntrada,
+    borderColor: "#ccc",
     borderRadius: 8,
     overflow: "hidden",
   },
@@ -189,7 +182,7 @@ const estilos = StyleSheet.create({
     height: 50,
   },
   botaoPrincipal: {
-    backgroundColor: Cores.claro.tonalidade,
+    backgroundColor: Colors.light.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
@@ -202,7 +195,7 @@ const estilos = StyleSheet.create({
     fontWeight: "600",
   },
   botaoExcluir: {
-    backgroundColor: Cores.claro.perigo,
+    backgroundColor: "#FF3B30",
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
