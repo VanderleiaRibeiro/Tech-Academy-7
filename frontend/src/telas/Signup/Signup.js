@@ -9,11 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-<<<<<<< HEAD:frontend/src/telas/Signup/Signup.js
 import { signupStyles as styles } from "../Signup/styles";
-=======
-import { signupStyles as styles } from "./SignupStyles";
->>>>>>> origin/main:frontend/src/telas/Signup.js
 
 export default function SignupScreen({ navigation }) {
   const [nome, setNome] = useState("");
