@@ -1,13 +1,10 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 
 export default function Cabecalho() {
   return (
-    <View style={estilo.header}>
-      <Text style={estilo.title}>RVM routine</Text>
-      <TouchableOpacity>
-        <Text style={{ color: "blue" }}>Menu</Text>
-      </TouchableOpacity>
+    <View style={estilo.cabecalho}>
+      <Text style={estilo.titulo}>RVM Routine</Text>
     </View>
   );
 }
@@ -17,7 +14,6 @@ const estilo = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-
   titulo: {
     fontSize: 24,
     fontWeight: "bold",
