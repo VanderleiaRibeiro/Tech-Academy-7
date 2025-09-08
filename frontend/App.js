@@ -8,6 +8,7 @@ import Signup from "./src/telas/Signup/Signup";
 import Home from "./src/telas/Home/Home";
 import Habitos from "./src/telas/Habitos";
 import Profile from "./src/telas/Profile/Profile";
+import EditProfile from "./src/telas/EditProfile/EditProfile";
 
 const Stack = createNativeStackNavigator();
 
@@ -18,8 +19,9 @@ function QuickNav({ navigation }) {
       <Button title="Signup" onPress={() => navigation.navigate("Signup")} />
       <Button title="Home" onPress={() => navigation.navigate("Home")} />
       <Button title="Habitos" onPress={() => navigation.navigate("Habitos")} />
+      <Button title="Profile" onPress={() => navigation.navigate("Profile")} />
       <Button
-        title="Editar Perfil"
+        title="EditProfile"
         onPress={() => navigation.navigate("EditProfile")}
       />
     </View>
@@ -39,6 +41,7 @@ export default function App() {
         <Stack.Screen name="Home" component={Home} />
         <Stack.Screen name="Habitos" component={Habitos} />
         <Stack.Screen name="Profile" component={Profile} />
+        <Stack.Screen name="EditProfile" component={EditProfile} />
       </Stack.Navigator>
     </NavigationContainer>
   );
