@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
   inputWrapper: {
     width: "100%",
     maxWidth: 400,
-    marginBottom: 15,
+    marginBottom: 14.9,
   },
 
   label: {

@@ -9,10 +9,10 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { styles } from "./Loginstyles";
-import Cabecalho from "../../src/components/Cabecalho";
+import { styles } from "./styles";
+import Cabecalho from "../../components/Cabecalho";
 
-export default function Login() {
+export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

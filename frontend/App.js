@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { View, Button } from "react-native";
 
-import Login from "./src/telas/Login";
+import Login from "./src/telas/Login/Login";
 import Signup from "./src/telas/Signup/Signup";
 import Home from "./src/telas/Home/Home";
 import Habitos from "./src/telas/Habitos";
