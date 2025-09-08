@@ -3,8 +3,8 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { View, Button } from "react-native";
 
-import Login from "./src/telas/Login";
-import Signup from "./src/telas/Signup";
+import Login from "./src/telas/Login/Login";
+import Signup from "./src/telas/Signup/Signup";
 import Home from "./src/telas/Home/Home";
 import Habitos from "./src/telas/Habitos";
 import Profile from "./src/telas/Profile/Profile";
@@ -29,7 +29,10 @@ function QuickNav({ navigation }) {
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="QuickNav">
+      <Stack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName="QuickNav"
+      >
         <Stack.Screen name="QuickNav" component={QuickNav} />
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Signup" component={Signup} />
