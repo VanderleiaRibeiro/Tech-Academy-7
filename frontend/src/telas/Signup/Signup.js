@@ -9,7 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { signupStyles as styles } from "./signupStyles";
+import { signupStyles as styles } from "../Signup/styles";
 
 export default function SignupScreen({ navigation }) {
   const [nome, setNome] = useState("");
