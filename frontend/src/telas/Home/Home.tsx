@@ -7,12 +7,32 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ListRenderItem,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { styles } from "./styles";
 import Cabecalho from "../../components/Cabecalho";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-function formatDatePTBR(date) {
+// --- Tipos de domínio ---
+export interface Habit {
+  id: string;
+  title: string;
+  category: string;
+  times?: string[];
+  doneToday: boolean;
+}
+
+// --- Navegação ---
+export type RootStackParamList = {
+  Home: undefined;
+  Habitos: undefined; // ajuste se o nome da sua rota for diferente
+};
+
+type Props = NativeStackScreenProps<RootStackParamList, "Home">;
+
+// --- Utilitário tipado ---
+function formatDatePTBR(date: Date): string {
   const weekday = date.toLocaleDateString("pt-BR", { weekday: "long" });
   const formatted = date.toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -21,23 +41,14 @@ function formatDatePTBR(date) {
   return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${formatted}`;
 }
 
-export default function Home({ navigation }) {
+const Home: React.FC<Props> = ({ navigation }) => {
   // Começa sem dados (estado "vazio")
-  const [habits, setHabits] = useState([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
 
   // carregue hábitos aqui
-  const loadHabitos = useCallback(async () => {
+  const loadHabitos = useCallback(async (): Promise<void> => {
     try {
-      // (substitua a URL e o parse conforme o backend):
-      // const res = await fetch("https://sua-api.com/habitos");
-      // const data = await res.json();
-      // setHabits(data);
-
-      // Exemplo com AsyncStorage:
-      // const raw = await AsyncStorage.getItem("@habitos");
-      // setHabits(raw ? JSON.parse(raw) : []);
-
-      // Por enquanto, nada: mantém vazio.
+      // exemplo: setHabits(await fetch(...))
       setHabits([]);
     } catch (e) {
       console.log("Erro ao carregar hábitos:", e);
@@ -50,23 +61,23 @@ export default function Home({ navigation }) {
   }, [loadHabitos]);
 
   const total = habits.length;
-  const done = useMemo(
-    () => habits.filter((h) => h.doneToday).length,
-    [habits]
-  );
 
-  const toggle = useCallback((id) => {
+  const done = useMemo<number>(() => {
+    return habits.filter((h) => h.doneToday).length;
+  }, [habits]);
+
+  const toggle = useCallback((id: string): void => {
     setHabits((prev) =>
       prev.map((h) => (h.id === id ? { ...h, doneToday: !h.doneToday } : h))
     );
-    // disparar um PATCH/PUT para marcar concluído.
+    // TODO: disparar PATCH/PUT para marcar concluído.
   }, []);
 
-  const goToHabitos = useCallback(() => {
-    navigation?.navigate?.("Habitos");
+  const goToHabitos = useCallback((): void => {
+    navigation.navigate("Habitos");
   }, [navigation]);
 
-  const renderItem = ({ item }) => (
+  const renderItem: ListRenderItem<Habit> = ({ item }) => (
     <View style={styles.habitCard}>
       <View style={{ flex: 1 }}>
         <Text style={styles.habitTitle}>{item.title}</Text>
@@ -128,10 +139,7 @@ export default function Home({ navigation }) {
                 rotina.
               </Text>
 
-              <TouchableOpacity
-                style={styles.buttonPrimary}
-                onPress={goToHabitos}
-              >
+              <TouchableOpacity style={styles.buttonPrimary} onPress={goToHabitos}>
                 <Text style={styles.buttonPrimaryText}>Cadastrar hábito</Text>
               </TouchableOpacity>
             </View>
@@ -176,4 +184,6 @@ export default function Home({ navigation }) {
       </ScrollView>
     </KeyboardAvoidingView>
   );
-}
+};
+
+export default Home;

@@ -13,6 +13,12 @@ class User extends Model {
   async validatePassword(password: string): Promise<boolean> {
     return bcrypt.compare(password, this.password);
   }
+
+   toJSON() {
+    const values = { ...this.get() } as any;
+    delete values.password; // 👈 remove do retorno
+    return values;
+  }
 }
 
 User.init(
