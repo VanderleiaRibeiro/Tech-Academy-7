@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Alert,
   View,
   Text,
   TextInput,
@@ -10,24 +11,70 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { signupStyles as styles } from "../Signup/styles";
+import api from "@/api/api";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-export default function SignupScreen({ navigation }) {
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [cpf, setCpf] = useState("");
-  const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+// tipagem das rotas
+export type RootStackParamList = {
+  Signup: undefined;
+  Login: undefined;
+};
 
-  const handleSignup = () => {
-    if (senha !== confirmarSenha) {
-      alert("As senhas não coincidem!");
+type Props = NativeStackScreenProps<RootStackParamList, "Signup">;
+
+export default function SignupScreen({ navigation }: Props) {
+  const [nome, setNome] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [senha, setSenha] = useState<string>("");
+  const [confirmarSenha, setConfirmarSenha] = useState<string>("");
+  const [cpf, setCpf] = useState<string>(""); // não usado no back
+  const [mostrarSenha, setMostrarSenha] = useState<boolean>(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState<boolean>(false);
+
+const handleSignup = async () => {
+  try {
+    console.log("[SIGNUP] start");
+
+    if (!email || !senha) {
+      Alert.alert("Atenção", "Preencha e-mail e senha.");
       return;
     }
-    console.log("Usuário cadastrado:", { nome, email, senha, cpf });
-    // integrar com backend aqui
-  };
+    if (senha !== confirmarSenha) {
+      Alert.alert("Atenção", "As senhas não coincidem.");
+      return;
+    }
+
+    // (opcional) força de senha
+    const senhaOk =
+      senha.length >= 8 && /[A-Z]/.test(senha) && /\d/.test(senha) && /[@$!%*?&]/.test(senha);
+    if (!senhaOk) {
+      Alert.alert(
+        "Senha fraca",
+        "Use pelo menos 8 caracteres, 1 letra maiúscula, 1 número e 1 símbolo."
+      );
+      return;
+    }
+
+    const r = await api.post("/users/register", {
+  name: nome || null,
+  email: email.trim().toLowerCase(),
+  password: senha, // <-- TEM que existir
+      // não enviar cpf (o back não usa)
+    });
+
+    console.log("[SIGNUP OK]", r.status, r.data);
+    Alert.alert("Sucesso", "Cadastro realizado!", [
+      { text: "OK", onPress: () => navigation.navigate("Login") },
+    ]);
+  } catch (e: any) {
+    const status = e?.response?.status;
+const apiMsg = e?.response?.data?.message;
+const msg =
+  apiMsg ??
+  (status === 409 ? "E-mail já cadastrado." : e?.message ?? "Erro no cadastro. Tente novamente.");
+Alert.alert("Erro", msg);
+  }
+};
 
   return (
     <KeyboardAvoidingView

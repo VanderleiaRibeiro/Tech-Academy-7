@@ -15,5 +15,5 @@
     "**/*.tsx",
     "nativewind-env.d.ts",
     "src/constants/Colors.js"
-  ]
+, "src/telas/Signup/Signup.js"  ]
 }

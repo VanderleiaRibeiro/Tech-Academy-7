@@ -9,7 +9,6 @@ export const signupStyles = StyleSheet.create({
     paddingHorizontal: 30,
     backgroundColor: "#fff",
   },
-
   card: {
     width: "100%",
     maxWidth: 400,
@@ -23,32 +22,27 @@ export const signupStyles = StyleSheet.create({
     elevation: 5,
     marginBottom: 20,
   },
-
   logo: {
     fontSize: 24,
     fontWeight: "600",
     textAlign: "center",
     marginBottom: 5,
   },
-
   title: {
     fontSize: 18,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 20,
   },
-
   label: {
     fontSize: 16,
     marginBottom: 5,
     color: "#333",
   },
-
   inputWrapper: {
     width: "100%",
     marginBottom: 15,
   },
-
   input: {
     width: "100%",
     borderWidth: 1,
@@ -58,7 +52,6 @@ export const signupStyles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: "#fff",
   },
-
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -68,12 +61,10 @@ export const signupStyles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 0,
   },
-
   inputPassword: {
     flex: 1,
     paddingVertical: 12,
   },
-
   button: {
     width: "100%",
     maxWidth: 400,
@@ -83,13 +74,11 @@ export const signupStyles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 15,
   },
-
   buttonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
   },
-
   link: {
     color: "#4DA6FF",
     textAlign: "center",

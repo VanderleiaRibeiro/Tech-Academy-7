@@ -16,17 +16,34 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  headerTitle: { fontSize: 22, fontWeight: "700", color: "#0F1B2D" },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#0F1B2D",
+  },
 
-  centerBox: { alignItems: "center", marginTop: 12, marginBottom: 12 },
+  centerBox: {
+    alignItems: "center",
+    marginTop: 12,
+    marginBottom: 12,
+  },
   avatar: {
     width: 96,
     height: 96,
     borderRadius: 48,
     backgroundColor: "#E5E7EB",
   },
-  name: { fontSize: 20, fontWeight: "700", color: "#0F1B2D", marginTop: 10 },
-  email: { fontSize: 14, color: "#6B7280", marginTop: 2 },
+  name: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#0F1B2D",
+    marginTop: 10,
+  },
+  email: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 2,
+  },
 
   list: {
     marginTop: 6,
@@ -43,5 +60,9 @@ export const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#E5E7EB",
   },
-  rowText: { fontSize: 16, color: "#111827", flex: 1 },
+  rowText: {
+    fontSize: 16,
+    color: "#111827",
+    flex: 1,
+  },
 });
