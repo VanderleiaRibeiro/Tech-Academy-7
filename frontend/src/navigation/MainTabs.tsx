@@ -4,8 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 // suas telas
 import Home from "../telas/Home/Home";
-import Habitos from "../telas/Habitos";
 import Profile from "../telas/Profile/Profile";
+import HabitosStack from "@/navigation/HabitosStack"; 
 
 export type MainTabParamList = {
   Home: undefined;
@@ -41,7 +41,11 @@ export default function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={Home} options={{ title: "Início" }} />
-      <Tab.Screen name="Habitos" component={Habitos} options={{ title: "Hábitos" }} />
+      <Tab.Screen
+        name="Habitos"
+        component={HabitosStack} // << usa o stack
+        options={{ title: "Hábitos" }}
+      />
       <Tab.Screen name="Profile" component={Profile} options={{ title: "Perfil" }} />
     </Tab.Navigator>
   );
