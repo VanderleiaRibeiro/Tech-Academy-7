@@ -1,6 +1,8 @@
+// app.ts
 import express from "express";
 import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
+import morgan from "morgan";
 
 import UserRoutes from "./routes/UserRoutes";
 import HabitRoutes from "./routes/HabitRoutes";
@@ -9,6 +11,7 @@ import User from "./models/UserModel";
 import Habit from "./models/HabitModel";
 import HabitRecord from "./models/HabitRecord";
 
+// ================== RELACIONAMENTOS ==================
 User.hasMany(Habit, { foreignKey: "user_id", onDelete: "CASCADE" });
 Habit.belongsTo(User, { foreignKey: "user_id" });
 
@@ -17,52 +20,80 @@ HabitRecord.belongsTo(Habit, { foreignKey: "habit_id" });
 
 const app = express();
 
-const FRONT_URL = process.env.FRONT_URL;
+// ================== CORS ==================
+const FRONT_URL = process.env.FRONT_URL; // ex: http://localhost:5173
+// Permite adicionar origens extras no .env, separadas por vírgula
+// ex: CORS_ALLOWED_ORIGINS=http://192.168.0.25:19006,http://192.168.0.25:5173
+const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
-// Origens base comuns em desenvolvimento
-const ALLOWED_BASE = [
-  FRONT_URL,                   // ex: http://localhost:5173 (se usar web)
-  "http://localhost:5173",     // Vite/Next/Web local
-  "http://localhost:19006",    // Expo Web
-  "http://127.0.0.1:19006",
-  "http://localhost:8081",     // Metro bundler (RN)
-].filter(Boolean) as string[];
+// Bases explícitas comuns
+const ALLOWED_BASE = new Set(
+  [
+    FRONT_URL,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:19006", // Expo Web
+    "http://127.0.0.1:19006",
+    "http://localhost:8081",  // Metro bundler
+    "http://127.0.0.1:8081",
+    "http://10.0.2.2",        // Android emulador
+    "http://10.0.3.2",        // Genymotion
+    "http://host.docker.internal:3001", // se usar Docker no back
+    ...CORS_ALLOWED_ORIGINS,
+  ].filter(Boolean)
+);
 
-// -------- CORS (único) --------
+// Padrões (regex) aceitos: LAN, faixas privadas, expo tunnel/domínios, localhost, etc.
+const allowedRegexes = [
+  /^https?:\/\/192\.168\.\d+\.\d+(?::\d+)?$/i,                         // LAN
+  /^https?:\/\/10\.\d+\.\d+\.\d+(?::\d+)?$/i,                           // rede privada 10.x
+  /^https?:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+(?::\d+)?$/i,          // rede privada 172.16–31.x
+  /^https?:\/\/localhost(?::\d+)?$/i,
+  /^https?:\/\/127\.0\.0\.1(?::\d+)?$/i,
+  /^exp:\/\//i,                                                         // scheme do Expo Go
+  /^https?:\/\/.*\.expo\.dev(?::\d+)?$/i,                               // expo tunnel
+  /^https?:\/\/.*\.exp\.direct(?::\d+)?$/i,                             // expo tunnel antigo
+  /^https?:\/\/.*\.exponent\.dev(?::\d+)?$/i,                           // expo legacy
+];
+
+function isAllowedOrigin(origin?: string | null) {
+  // Apps nativos (React Native/Expo Go), curl, Postman → geralmente sem Origin
+  if (!origin) return true;
+  if (ALLOWED_BASE.has(origin)) return true;
+  return allowedRegexes.some((re) => re.test(origin));
+}
+
 const corsOptions: CorsOptions = {
-  credentials: true,
+  credentials: true, // só necessário se usar cookies/aut com credenciais
   origin(origin, callback) {
-    // App nativo (React Native), Postman e curl NÃO enviam Origin → permitir
-    if (!origin) return callback(null, true);
-
-    // Permite base + emulador Android + IPs LAN + esquema Expo
-    const allowed =
-      ALLOWED_BASE.includes(origin) ||
-      /^http:\/\/10\.0\.2\.2(?::\d+)?$/i.test(origin) ||        // Android emulador
-      /^http:\/\/192\.168\.\d+\.\d+(?::\d+)?$/i.test(origin) || // LAN (device físico / Expo LAN)
-      /^exp:\/\//i.test(origin);                                 // Expo scheme
-
-    return allowed
-      ? callback(null, true)
-      : callback(new Error("Not allowed by CORS: " + origin));
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Not allowed by CORS: ${origin}`));
+    }
   },
 };
 
-// (opcional) log para diagnosticar a Origin
+// (Opcional) log da Origin pra diagnosticar
 app.use((req, _res, next) => {
   console.log("REQ ORIGIN ->", req.headers.origin || "(no origin)");
   next();
 });
 
+app.use(morgan("dev"));
 app.use(cors(corsOptions));
-// Pré-flight explícito (opcional)
+// Pré-flight explícito (opcional, ajuda com alguns proxies)
 app.options("*", cors(corsOptions));
-// -------- fim do CORS --------
 
+// ================== PARSERS ==================
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ================== ROTAS ==================
 app.use("/api/users", UserRoutes);
 app.use("/api/habits", HabitRoutes);
 
