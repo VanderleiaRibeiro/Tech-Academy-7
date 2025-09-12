@@ -58,7 +58,6 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       setLoading(true);
 
-      // baseURL já tem /api → use /users/login
       const { data } = await api.post<AuthResponse>("/users/login", {
         email: email.trim().toLowerCase(),
         password,
@@ -70,8 +69,8 @@ export default function LoginScreen({ navigation }: Props) {
       // Persistir via contexto (AsyncStorage + axios + state)
       await login(user, token);
 
+      // ❌ NÃO navegue/reset aqui; o RootNavigator troca pra MainTabs quando user != null
       Alert.alert("Sucesso", `Bem-vindo, ${user?.name ?? user?.email}!`);
-      navigation.reset({ index: 0, routes: [{ name: "MainTabs" as never }] });
     } catch (e: any) {
       const status = e?.response?.status;
       const messageFromApi =
