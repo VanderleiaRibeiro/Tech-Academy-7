@@ -69,13 +69,14 @@ export default function LoginScreen({ navigation }: Props) {
       // Persistir via contexto (AsyncStorage + axios + state)
       await login(user, token);
 
-      // ❌ NÃO navegue/reset aqui; o RootNavigator troca pra MainTabs quando user != null
+      // NÃO navegue/reset aqui; o RootNavigator troca pra MainTabs quando user != null
       Alert.alert("Sucesso", `Bem-vindo, ${user?.name ?? user?.email}!`);
     } catch (e: any) {
       const status = e?.response?.status;
       const messageFromApi =
         e?.response?.data?.message ??
-        (Array.isArray(e?.response?.data?.issues) && e.response.data.issues[0]?.message);
+        (Array.isArray(e?.response?.data?.issues) &&
+          e.response.data.issues[0]?.message);
 
       const friendly =
         messageFromApi ??
