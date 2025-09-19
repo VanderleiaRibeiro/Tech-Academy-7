@@ -37,10 +37,10 @@ const ALLOWED_BASE = new Set(
     "http://127.0.0.1:5173",
     "http://localhost:19006", // Expo Web
     "http://127.0.0.1:19006",
-    "http://localhost:8081",  // Metro bundler
+    "http://localhost:8081", // Metro bundler
     "http://127.0.0.1:8081",
-    "http://10.0.2.2",        // Android emulador
-    "http://10.0.3.2",        // Genymotion
+    "http://10.0.2.2", // Android emulador
+    "http://10.0.3.2", // Genymotion
     "http://host.docker.internal:3001", // se usar Docker no back
     ...CORS_ALLOWED_ORIGINS,
   ].filter(Boolean)
@@ -48,15 +48,15 @@ const ALLOWED_BASE = new Set(
 
 // Padrões (regex) aceitos: LAN, faixas privadas, expo tunnel/domínios, localhost, etc.
 const allowedRegexes = [
-  /^https?:\/\/192\.168\.\d+\.\d+(?::\d+)?$/i,                         // LAN
-  /^https?:\/\/10\.\d+\.\d+\.\d+(?::\d+)?$/i,                           // rede privada 10.x
-  /^https?:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+(?::\d+)?$/i,          // rede privada 172.16–31.x
+  /^https?:\/\/192\.168\.\d+\.\d+(?::\d+)?$/i, // LAN
+  /^https?:\/\/10\.\d+\.\d+\.\d+(?::\d+)?$/i, // rede privada 10.x
+  /^https?:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+(?::\d+)?$/i, // rede privada 172.16–31.x
   /^https?:\/\/localhost(?::\d+)?$/i,
   /^https?:\/\/127\.0\.0\.1(?::\d+)?$/i,
-  /^exp:\/\//i,                                                         // scheme do Expo Go
-  /^https?:\/\/.*\.expo\.dev(?::\d+)?$/i,                               // expo tunnel
-  /^https?:\/\/.*\.exp\.direct(?::\d+)?$/i,                             // expo tunnel antigo
-  /^https?:\/\/.*\.exponent\.dev(?::\d+)?$/i,                           // expo legacy
+  /^exp:\/\//i, // scheme do Expo Go
+  /^https?:\/\/.*\.expo\.dev(?::\d+)?$/i, // expo tunnel
+  /^https?:\/\/.*\.exp\.direct(?::\d+)?$/i, // expo tunnel antigo
+  /^https?:\/\/.*\.exponent\.dev(?::\d+)?$/i, // expo legacy
 ];
 
 function isAllowedOrigin(origin?: string | null) {

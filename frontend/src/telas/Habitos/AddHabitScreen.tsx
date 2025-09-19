@@ -27,7 +27,14 @@ const AddHabitScreen: React.FC<Props> = ({ navigation }) => {
   const [horarios, setHorarios] = useState<string[]>(["08:00"]);
   const [notificacoes, setNotificacoes] = useState<boolean>(true);
 
-  const categorias = ["Saúde", "Exercício", "Estudo", "Bem-estar", "Casa", "Trabalho"];
+  const categorias = [
+    "Saúde",
+    "Exercício",
+    "Estudo",
+    "Bem-estar",
+    "Casa",
+    "Trabalho",
+  ];
   const frequencias = ["Diário", "Semanal", "Personalizado"];
 
   const adicionarHorario = () => setHorarios((prev) => [...prev, "08:00"]);
@@ -49,10 +56,11 @@ const AddHabitScreen: React.FC<Props> = ({ navigation }) => {
         return;
       }
 
-      // agrega os campos visuais na description (back atual: name/description)
       const description =
         `Categoria: ${categoria} | Frequência: ${frequencia} | ` +
-        `Horários: ${horarios.join(", ")} | Notificações: ${notificacoes ? "on" : "off"}`;
+        `Horários: ${horarios.join(", ")} | Notificações: ${
+          notificacoes ? "on" : "off"
+        }`;
 
       await api.post("/habits", { name: nome.trim(), description });
 
@@ -60,7 +68,8 @@ const AddHabitScreen: React.FC<Props> = ({ navigation }) => {
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     } catch (e: any) {
-      const msg = e?.response?.data?.error || e?.message || "Falha ao cadastrar hábito";
+      const msg =
+        e?.response?.data?.error || e?.message || "Falha ao cadastrar hábito";
       Alert.alert("Erro", String(msg));
     }
   };
@@ -83,11 +92,18 @@ const AddHabitScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.grupoFormulario}>
           <Text style={styles.rotulo}>Categoria</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriasContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoriasContainer}
+          >
             {categorias.map((cat) => (
               <TouchableOpacity
                 key={cat}
-                style={[styles.categoriaItem, categoria === cat && styles.categoriaSelecionada]}
+                style={[
+                  styles.categoriaItem,
+                  categoria === cat && styles.categoriaSelecionada,
+                ]}
                 onPress={() => setCategoria(cat)}
               >
                 <Text
@@ -109,7 +125,10 @@ const AddHabitScreen: React.FC<Props> = ({ navigation }) => {
             {frequencias.map((freq) => (
               <TouchableOpacity
                 key={freq}
-                style={[styles.frequenciaItem, frequencia === freq && styles.frequenciaSelecionada]}
+                style={[
+                  styles.frequenciaItem,
+                  frequencia === freq && styles.frequenciaSelecionada,
+                ]}
                 onPress={() => setFrequencia(freq)}
               >
                 <Text
@@ -137,15 +156,31 @@ const AddHabitScreen: React.FC<Props> = ({ navigation }) => {
                 onChangeText={(texto) => atualizarHorario(index, texto)}
               />
               {horarios.length > 1 && (
-                <TouchableOpacity style={styles.botaoRemoverHorario} onPress={() => removerHorario(index)}>
-                  <Ionicons name="close-circle" size={24} color={Cores.claro.perigo} />
+                <TouchableOpacity
+                  style={styles.botaoRemoverHorario}
+                  onPress={() => removerHorario(index)}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={24}
+                    color={Cores.claro.perigo}
+                  />
                 </TouchableOpacity>
               )}
             </View>
           ))}
-          <TouchableOpacity style={styles.botaoAdicionarHorario} onPress={adicionarHorario}>
-            <Ionicons name="add-circle" size={20} color={Cores.claro.tonalidade} />
-            <Text style={styles.botaoAdicionarHorarioTexto}>Adicionar horário</Text>
+          <TouchableOpacity
+            style={styles.botaoAdicionarHorario}
+            onPress={adicionarHorario}
+          >
+            <Ionicons
+              name="add-circle"
+              size={20}
+              color={Cores.claro.tonalidade}
+            />
+            <Text style={styles.botaoAdicionarHorarioTexto}>
+              Adicionar horário
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -157,12 +192,20 @@ const AddHabitScreen: React.FC<Props> = ({ navigation }) => {
           >
             <Text style={styles.notificacaoTexto}>Receber lembretes</Text>
             <View style={[styles.toggle, notificacoes && styles.toggleAtivo]}>
-              <View style={[styles.togglePonto, notificacoes && styles.togglePontoAtivo]} />
+              <View
+                style={[
+                  styles.togglePonto,
+                  notificacoes && styles.togglePontoAtivo,
+                ]}
+              />
             </View>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.botaoPrincipal} onPress={manipularSalvar}>
+        <TouchableOpacity
+          style={styles.botaoPrincipal}
+          onPress={manipularSalvar}
+        >
           <Text style={styles.textoBotaoPrincipal}>Salvar Hábito</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -174,7 +217,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Cores.claro.fundo },
   conteudo: { flex: 1, padding: 16 },
   grupoFormulario: { marginBottom: 24 },
-  rotulo: { fontSize: 16, fontWeight: "600", color: Cores.claro.texto, marginBottom: 12 },
+  rotulo: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Cores.claro.texto,
+    marginBottom: 12,
+  },
   entrada: {
     backgroundColor: "white",
     borderWidth: 1,
@@ -194,7 +242,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
     backgroundColor: "white",
   },
-  categoriaSelecionada: { backgroundColor: Cores.claro.tonalidade, borderColor: Cores.claro.tonalidade },
+  categoriaSelecionada: {
+    backgroundColor: Cores.claro.tonalidade,
+    borderColor: Cores.claro.tonalidade,
+  },
   categoriaTexto: { color: Cores.claro.texto },
   categoriaTextoSelecionado: { color: "white", fontWeight: "600" },
   frequenciasContainer: {
@@ -209,11 +260,23 @@ const styles = StyleSheet.create({
   frequenciaSelecionada: { backgroundColor: Cores.claro.tonalidade },
   frequenciaTexto: { color: Cores.claro.texto },
   frequenciaTextoSelecionado: { color: "white", fontWeight: "600" },
-  horarioContainer: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  horarioContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   horarioInput: { flex: 1, marginRight: 8 },
   botaoRemoverHorario: { padding: 4 },
-  botaoAdicionarHorario: { flexDirection: "row", alignItems: "center", marginTop: 8 },
-  botaoAdicionarHorarioTexto: { color: Cores.claro.tonalidade, marginLeft: 4, fontWeight: "600" },
+  botaoAdicionarHorario: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  botaoAdicionarHorarioTexto: {
+    color: Cores.claro.tonalidade,
+    marginLeft: 4,
+    fontWeight: "600",
+  },
   notificacaoToggle: {
     flexDirection: "row",
     alignItems: "center",
@@ -225,9 +288,21 @@ const styles = StyleSheet.create({
     borderColor: Cores.claro.borda,
   },
   notificacaoTexto: { color: Cores.claro.texto, fontSize: 16 },
-  toggle: { width: 50, height: 28, borderRadius: 14, backgroundColor: "#E0E0E0", padding: 2, justifyContent: "center" },
+  toggle: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#E0E0E0",
+    padding: 2,
+    justifyContent: "center",
+  },
   toggleAtivo: { backgroundColor: Cores.claro.tonalidade },
-  togglePonto: { width: 24, height: 24, borderRadius: 12, backgroundColor: "white" },
+  togglePonto: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "white",
+  },
   togglePontoAtivo: { transform: [{ translateX: 22 }] },
   botaoPrincipal: {
     backgroundColor: Cores.claro.tonalidade,

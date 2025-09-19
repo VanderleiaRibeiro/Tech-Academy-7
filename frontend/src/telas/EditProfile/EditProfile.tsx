@@ -16,7 +16,6 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { User, useUser } from "../../telas/contexts/UserContext";
 import api from "@/api/api";
 
-// Alinhar com o App.tsx
 type RootStackParamList = {
   EditProfile: undefined;
   Login: undefined;
@@ -29,7 +28,7 @@ export default function EditProfileScreen({ navigation }: Props) {
   const { user, setUser, logout } = useUser();
 
   const [nome, setNome] = useState<string>(user?.name ?? "");
-  const [email] = useState<string>(user?.email ?? ""); // somente leitura
+  const [email] = useState<string>(user?.email ?? "");
   const [senha, setSenha] = useState<string>("");
   const [confirmarSenha, setConfirmarSenha] = useState<string>("");
   const [mostrarSenha, setMostrarSenha] = useState<boolean>(false);
@@ -50,8 +49,6 @@ export default function EditProfileScreen({ navigation }: Props) {
       }
 
       const payload: Record<string, unknown> = { name: nome.trim() };
-
-      // Senha é opcional. Se preencher, valida igual ao back (mín 8, 1 maiúscula, 1 número, 1 símbolo)
       if (senha || confirmarSenha) {
         if (senha !== confirmarSenha) {
           Alert.alert("Erro", "As senhas não coincidem!");
@@ -73,13 +70,19 @@ export default function EditProfileScreen({ navigation }: Props) {
       }
 
       setSalvando(true);
-      const { data: updated } = await api.put<User>(`/users/${user.id}`, payload);
-setUser(updated); // atualiza contexto
-      Alert.alert("Sucesso", "Perfil atualizado!", [{ text: "OK", onPress: goBack }]);
+      const { data: updated } = await api.put<User>(
+        `/users/${user.id}`,
+        payload
+      );
+      setUser(updated);
+      Alert.alert("Sucesso", "Perfil atualizado!", [
+        { text: "OK", onPress: goBack },
+      ]);
     } catch (e: any) {
       const msg =
         e?.response?.data?.message ??
-        (Array.isArray(e?.response?.data?.issues) && e.response.data.issues[0]?.message) ??
+        (Array.isArray(e?.response?.data?.issues) &&
+          e.response.data.issues[0]?.message) ??
         e?.message ??
         "Falha ao atualizar perfil.";
       Alert.alert("Erro", String(msg));
@@ -105,7 +108,7 @@ setUser(updated); // atualiza contexto
             try {
               setExcluindo(true);
               await api.delete(`/users/${user.id}`);
-              await logout(navigation); // limpa token e volta pro Login
+              await logout(navigation);
             } catch (e: any) {
               const msg =
                 e?.response?.data?.message ??
@@ -146,9 +149,12 @@ setUser(updated); // atualiza contexto
         <View style={styles.inputWrapper}>
           <Text style={styles.label}>E-mail</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: "#F3F4F6", color: "#6B7280" }]}
+            style={[
+              styles.input,
+              { backgroundColor: "#F3F4F6", color: "#6B7280" },
+            ]}
             value={email}
-            editable={false} // email não é atualizado pelo back
+            editable={false}
           />
         </View>
 
@@ -203,7 +209,10 @@ setUser(updated); // atualiza contexto
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.deleteButton, (salvando || excluindo) && { opacity: 0.7 }]}
+          style={[
+            styles.deleteButton,
+            (salvando || excluindo) && { opacity: 0.7 },
+          ]}
           onPress={handleDelete}
           disabled={salvando || excluindo}
         >

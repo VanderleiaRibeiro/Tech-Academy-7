@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Cores } from "../../constants/Colors";
@@ -14,7 +15,6 @@ import Cabecalho from "../../components/Cabecalho";
 import api from "@/api/api";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-// ===== Tipos =====
 export type HabitDTO = {
   id: number;
   user_id: number;
@@ -25,96 +25,150 @@ export type HabitDTO = {
 };
 
 export type RootStackParamList = {
-  EditarHabito: { habito: HabitDTO | any }; // aceita também o objeto antigo com 'nome'
+  EditarHabito: { habito: HabitDTO | Record<string, unknown> };
   Habitos: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditarHabito">;
 
-const EditHabitScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { habito } = route.params || {};
-  const estaEditando = !!habito;
+const CATEGORIAS = [
+  "Saúde",
+  "Exercício",
+  "Estudo",
+  "Bem-estar",
+  "Casa",
+  "Trabalho",
+  "Outro",
+] as const;
 
-  // aceita tanto o shape antigo (nome) quanto o novo (name)
-  const [nome, setNome] = useState<string>(habito?.name ?? habito?.nome ?? "");
-  const [categoria, setCategoria] = useState<string>(habito?.categoria ?? "Saúde");
-  const [frequencia, setFrequencia] = useState<string>(habito?.frequencia ?? "Diário");
+const FREQUENCIAS = ["Diário", "Semanal", "Personalizado"] as const;
+
+function buildDescription(params: {
+  categoria: string;
+  frequencia: string;
+  horarios: string[];
+  notificacoes: boolean;
+}) {
+  const { categoria, frequencia, horarios, notificacoes } = params;
+  return `Categoria: ${categoria} | Frequência: ${frequencia} | Horários: ${horarios.join(
+    ", "
+  )} | Notificações: ${notificacoes ? "on" : "off"}`;
+}
+
+function showInfo(title: string, message: string) {
+  if (Platform.OS === "web") {
+    window.alert(`${title}: ${message}`);
+    return;
+  }
+  Alert.alert(title, message);
+}
+
+async function confirmDelete(): Promise<boolean> {
+  if (Platform.OS === "web") {
+    return window.confirm("Tem certeza que deseja excluir este hábito?");
+  }
+  return new Promise((resolve) => {
+    Alert.alert(
+      "Excluir Hábito",
+      "Tem certeza que deseja excluir este hábito?",
+      [
+        { text: "Cancelar", style: "cancel", onPress: () => resolve(false) },
+        { text: "Excluir", style: "destructive", onPress: () => resolve(true) },
+      ]
+    );
+  });
+}
+
+const EditHabitScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { habito } = route.params ?? {};
+  const estaEditando = Boolean(habito);
+
+  const [nome, setNome] = useState<string>(
+    (habito?.name as string) ?? (habito as any)?.nome ?? ""
+  );
+  const [categoria, setCategoria] = useState<string>(
+    (habito as any)?.categoria ?? "Saúde"
+  );
+  const [frequencia, setFrequencia] = useState<string>(
+    (habito as any)?.frequencia ?? "Diário"
+  );
   const [horarios, setHorarios] = useState<string[]>(
-    Array.isArray(habito?.horarios) ? habito.horarios : ["08:00"]
+    Array.isArray((habito as any)?.horarios)
+      ? ((habito as any).horarios as string[])
+      : ["08:00"]
   );
   const [notificacoes, setNotificacoes] = useState<boolean>(
-    typeof habito?.notificacoes === "boolean" ? habito.notificacoes : true
+    typeof (habito as any)?.notificacoes === "boolean"
+      ? Boolean((habito as any).notificacoes)
+      : true
   );
 
-  const categorias = ["Saúde", "Exercício", "Estudo", "Bem-estar", "Casa", "Trabalho", "Outro"];
-  const frequencias = ["Diário", "Semanal", "Personalizado"];
+  const onAdicionarHorario = () => setHorarios((prev) => [...prev, "08:00"]);
 
-  const adicionarHorario = () => setHorarios((prev) => [...prev, "08:00"]);
-
-  const removerHorario = (index: number) => {
-    if (horarios.length > 1) {
-      setHorarios((prev) => prev.filter((_, i) => i !== index));
-    }
+  const onRemoverHorario = (index: number) => {
+    if (horarios.length <= 1) return;
+    setHorarios((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const atualizarHorario = (index: number, valor: string) => {
+  const onAtualizarHorario = (index: number, valor: string) => {
     setHorarios((prev) => prev.map((h, i) => (i === index ? valor : h)));
   };
 
-  const manipularSalvar = async () => {
+  const onSalvar = async () => {
+    const nomeTrim = nome.trim();
+    if (!nomeTrim) {
+      showInfo("Erro", "Por favor, informe um nome para o hábito");
+      return;
+    }
+    if (!estaEditando || !habito?.id) {
+      showInfo("Erro", "Hábito inválido para edição");
+      return;
+    }
+
     try {
-      if (!nome.trim()) {
-        Alert.alert("Erro", "Por favor, informe um nome para o hábito");
-        return;
-      }
-
-      // agrega campos visuais na description (back atual salva name/description)
-      const description =
-        `Categoria: ${categoria} | Frequência: ${frequencia} | ` +
-        `Horários: ${horarios.join(", ")} | Notificações: ${notificacoes ? "on" : "off"}`;
-
-      if (!estaEditando || !habito?.id) {
-        Alert.alert("Erro", "Hábito inválido para edição");
-        return;
-      }
+      const description = buildDescription({
+        categoria,
+        frequencia,
+        horarios,
+        notificacoes,
+      });
 
       await api.put(`/habits/${habito.id}`, {
-        name: nome.trim(),
+        name: nomeTrim,
         description,
       });
 
       Alert.alert("Sucesso", "Hábito atualizado com sucesso!", [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
-    } catch (e: any) {
-      const msg = e?.response?.data?.error || e?.message || "Falha ao atualizar hábito";
-      Alert.alert("Erro", String(msg));
+    } catch (e: unknown) {
+      const err = e as any;
+      const msg =
+        err?.response?.data?.error ??
+        err?.message ??
+        "Falha ao atualizar hábito";
+      showInfo("Erro", String(msg));
     }
   };
 
-  const manipularExcluir = () => {
-    Alert.alert("Excluir Hábito", "Tem certeza que deseja excluir este hábito?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Excluir",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            if (!habito?.id) {
-              Alert.alert("Erro", "Hábito inválido");
-              return;
-            }
-            await api.delete(`/habits/${habito.id}`);
-            Alert.alert("Sucesso", "Hábito excluído com sucesso!", [
-              { text: "OK", onPress: () => navigation.goBack() },
-            ]);
-          } catch (e: any) {
-            const msg = e?.response?.data?.error || e?.message || "Falha ao excluir hábito";
-            Alert.alert("Erro", String(msg));
-          }
-        },
-      },
-    ]);
+  const onExcluir = async () => {
+    if (!habito?.id) {
+      showInfo("Erro", "Hábito inválido");
+      return;
+    }
+    const ok = await confirmDelete();
+    if (!ok) return;
+
+    try {
+      await api.delete(`/habits/${habito.id}`);
+      showInfo("Sucesso", "Hábito excluído com sucesso!");
+      navigation.goBack();
+    } catch (e: unknown) {
+      const err = e as any;
+      const msg =
+        err?.response?.data?.error ?? err?.message ?? "Falha ao excluir hábito";
+      showInfo("Erro", String(msg));
+    }
   };
 
   return (
@@ -122,10 +176,10 @@ const EditHabitScreen: React.FC<Props> = ({ navigation, route }) => {
       <Cabecalho
         titulo={estaEditando ? "Editar Hábito" : "Novo Hábito"}
         mostrarVoltar
-        onVoltar={() => navigation.goBack()}
+        onVoltar={navigation.goBack}
       />
 
-      <ScrollView style={styles.conteudo}>
+      <ScrollView style={styles.conteudo} keyboardShouldPersistTaps="handled">
         <View style={styles.grupoFormulario}>
           <Text style={styles.rotulo}>Nome do Hábito</Text>
           <TextInput
@@ -144,66 +198,94 @@ const EditHabitScreen: React.FC<Props> = ({ navigation, route }) => {
             showsHorizontalScrollIndicator={false}
             style={styles.categoriasContainer}
           >
-            {categorias.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[styles.categoriaItem, categoria === cat && styles.categoriaSelecionada]}
-                onPress={() => setCategoria(cat)}
-              >
-                <Text
+            {CATEGORIAS.map((cat) => {
+              const selecionada = categoria === cat;
+              return (
+                <TouchableOpacity
+                  key={cat}
                   style={[
-                    styles.categoriaTexto,
-                    categoria === cat && styles.categoriaTextoSelecionado,
+                    styles.categoriaItem,
+                    selecionada && styles.categoriaSelecionada,
                   ]}
+                  onPress={() => setCategoria(cat)}
                 >
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.categoriaTexto,
+                      selecionada && styles.categoriaTextoSelecionado,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 
         <View style={styles.grupoFormulario}>
           <Text style={styles.rotulo}>Frequência</Text>
           <View style={styles.frequenciasContainer}>
-            {frequencias.map((freq) => (
-              <TouchableOpacity
-                key={freq}
-                style={[styles.frequenciaItem, frequencia === freq && styles.frequenciaSelecionada]}
-                onPress={() => setFrequencia(freq)}
-              >
-                <Text
+            {FREQUENCIAS.map((freq) => {
+              const selecionada = frequencia === freq;
+              return (
+                <TouchableOpacity
+                  key={freq}
                   style={[
-                    styles.frequenciaTexto,
-                    frequencia === freq && styles.frequenciaTextoSelecionado,
+                    styles.frequenciaItem,
+                    selecionada && styles.frequenciaSelecionada,
                   ]}
+                  onPress={() => setFrequencia(freq)}
                 >
-                  {freq}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.frequenciaTexto,
+                      selecionada && styles.frequenciaTextoSelecionado,
+                    ]}
+                  >
+                    {freq}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         <View style={styles.grupoFormulario}>
           <Text style={styles.rotulo}>Horários (Lembretes)</Text>
           {horarios.map((horario, index) => (
-            <View key={index} style={styles.horarioContainer}>
+            <View key={`${horario}-${index}`} style={styles.horarioContainer}>
               <TextInput
                 style={[styles.entrada, styles.horarioInput]}
                 placeholder="HH:MM"
                 placeholderTextColor={Cores.claro.textoSecundario}
                 value={horario}
-                onChangeText={(texto) => atualizarHorario(index, texto)}
+                onChangeText={(texto) => onAtualizarHorario(index, texto)}
               />
-              <TouchableOpacity style={styles.botaoRemoverHorario} onPress={() => removerHorario(index)}>
-                <Ionicons name="close-circle" size={24} color={Cores.claro.perigo} />
+              <TouchableOpacity
+                style={styles.botaoRemoverHorario}
+                onPress={() => onRemoverHorario(index)}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={24}
+                  color={Cores.claro.perigo}
+                />
               </TouchableOpacity>
             </View>
           ))}
-          <TouchableOpacity style={styles.botaoAdicionarHorario} onPress={adicionarHorario}>
-            <Ionicons name="add-circle" size={20} color={Cores.claro.tonalidade} />
-            <Text style={styles.botaoAdicionarHorarioTexto}>+ Adicionar horário</Text>
+          <TouchableOpacity
+            style={styles.botaoAdicionarHorario}
+            onPress={onAdicionarHorario}
+          >
+            <Ionicons
+              name="add-circle"
+              size={20}
+              color={Cores.claro.tonalidade}
+            />
+            <Text style={styles.botaoAdicionarHorarioTexto}>
+              + Adicionar horário
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -215,19 +297,24 @@ const EditHabitScreen: React.FC<Props> = ({ navigation, route }) => {
           >
             <Text style={styles.notificacaoTexto}>Receber lembretes</Text>
             <View style={[styles.toggle, notificacoes && styles.toggleAtivo]}>
-              <View style={[styles.togglePonto, notificacoes && styles.togglePontoAtivo]} />
+              <View
+                style={[
+                  styles.togglePonto,
+                  notificacoes && styles.togglePontoAtivo,
+                ]}
+              />
             </View>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.botaoPrincipal} onPress={manipularSalvar}>
+        <TouchableOpacity style={styles.botaoPrincipal} onPress={onSalvar}>
           <Text style={styles.textoBotaoPrincipal}>
             {estaEditando ? "Salvar Alterações" : "Salvar Hábito"}
           </Text>
         </TouchableOpacity>
 
         {estaEditando && (
-          <TouchableOpacity style={styles.botaoExcluir} onPress={manipularExcluir}>
+          <TouchableOpacity style={styles.botaoExcluir} onPress={onExcluir}>
             <Ionicons name="trash-outline" size={20} color="white" />
             <Text style={styles.textoBotaoExcluir}>Excluir Hábito</Text>
           </TouchableOpacity>
@@ -241,7 +328,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Cores.claro.fundo },
   conteudo: { flex: 1, padding: 16 },
   grupoFormulario: { marginBottom: 24 },
-  rotulo: { fontSize: 16, fontWeight: "600", color: Cores.claro.texto, marginBottom: 12 },
+  rotulo: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Cores.claro.texto,
+    marginBottom: 12,
+  },
   entrada: {
     backgroundColor: "white",
     borderWidth: 1,
@@ -261,7 +353,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
     backgroundColor: "white",
   },
-  categoriaSelecionada: { backgroundColor: Cores.claro.tonalidade, borderColor: Cores.claro.tonalidade },
+  categoriaSelecionada: {
+    backgroundColor: Cores.claro.tonalidade,
+    borderColor: Cores.claro.tonalidade,
+  },
   categoriaTexto: { color: Cores.claro.texto },
   categoriaTextoSelecionado: { color: "white", fontWeight: "600" },
   frequenciasContainer: {
@@ -276,11 +371,23 @@ const styles = StyleSheet.create({
   frequenciaSelecionada: { backgroundColor: Cores.claro.tonalidade },
   frequenciaTexto: { color: Cores.claro.texto },
   frequenciaTextoSelecionado: { color: "white", fontWeight: "600" },
-  horarioContainer: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  horarioContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   horarioInput: { flex: 1, marginRight: 8 },
   botaoRemoverHorario: { padding: 4 },
-  botaoAdicionarHorario: { flexDirection: "row", alignItems: "center", marginTop: 8 },
-  botaoAdicionarHorarioTexto: { color: Cores.claro.tonalidade, marginLeft: 4, fontWeight: "600" },
+  botaoAdicionarHorario: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  botaoAdicionarHorarioTexto: {
+    color: Cores.claro.tonalidade,
+    marginLeft: 4,
+    fontWeight: "600",
+  },
   notificacaoToggle: {
     flexDirection: "row",
     alignItems: "center",
@@ -292,9 +399,21 @@ const styles = StyleSheet.create({
     borderColor: Cores.claro.borda,
   },
   notificacaoTexto: { color: Cores.claro.texto, fontSize: 16 },
-  toggle: { width: 50, height: 28, borderRadius: 14, backgroundColor: "#E0E0E0", padding: 2, justifyContent: "center" },
+  toggle: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#E0E0E0",
+    padding: 2,
+    justifyContent: "center",
+  },
   toggleAtivo: { backgroundColor: Cores.claro.tonalidade },
-  togglePonto: { width: 24, height: 24, borderRadius: 12, backgroundColor: "white" },
+  togglePonto: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "white",
+  },
   togglePontoAtivo: { transform: [{ translateX: 22 }] },
   botaoPrincipal: {
     backgroundColor: Cores.claro.tonalidade,
@@ -313,7 +432,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
   },
-  textoBotaoExcluir: { color: "white", fontSize: 16, fontWeight: "600", marginLeft: 8 },
+  textoBotaoExcluir: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
 });
 
 export default EditHabitScreen;

@@ -25,7 +25,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDTO | null>(null);
   const [booting, setBooting] = useState(true);
 
-  // Hidrata token+user ao abrir o app
   useEffect(() => {
     (async () => {
       try {
@@ -33,7 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.getItem("@token"),
           AsyncStorage.getItem("@user"),
         ]);
-        if (token) api.defaults.headers.common.Authorization = `Bearer ${token}`;
+        if (token)
+          api.defaults.headers.common.Authorization = `Bearer ${token}`;
         if (rawUser) setUser(JSON.parse(rawUser));
       } finally {
         setBooting(false);
