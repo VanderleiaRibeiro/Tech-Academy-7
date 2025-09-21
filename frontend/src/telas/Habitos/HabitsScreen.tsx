@@ -14,7 +14,6 @@ import api from "@/api/api";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-// Reaproveita o DTO usado na outra tela se quiser; aqui fica local:
 type HabitDTO = {
   id: number;
   user_id: number;
@@ -50,7 +49,11 @@ const HabitsScreen: React.FC = () => {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
+  useFocusEffect(
+    useCallback(() => {
+      carregar();
+    }, [carregar])
+  );
 
   const renderItem = ({ item }: { item: HabitDTO }) => (
     <TouchableOpacity
@@ -67,7 +70,11 @@ const HabitsScreen: React.FC = () => {
           )}
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={24} color={Cores.claro.textoSecundario} />
+      <Ionicons
+        name="chevron-forward"
+        size={24}
+        color={Cores.claro.textoSecundario}
+      />
     </TouchableOpacity>
   );
 
@@ -80,7 +87,11 @@ const HabitsScreen: React.FC = () => {
           <ActivityIndicator style={{ marginTop: 24 }} />
         ) : habitos.length === 0 ? (
           <View style={styles.vazioContainer}>
-            <Ionicons name="list-outline" size={64} color={Cores.claro.textoSecundario} />
+            <Ionicons
+              name="list-outline"
+              size={64}
+              color={Cores.claro.textoSecundario}
+            />
             <Text style={styles.vazioTexto}>Nenhum hábito cadastrado</Text>
             <Text style={styles.vazioSubtitulo}>
               Comece adicionando seu primeiro hábito para acompanhar sua rotina.
@@ -126,13 +137,38 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   habitoInfo: { flex: 1 },
-  habitoNome: { fontSize: 16, fontWeight: "600", color: Cores.claro.texto, marginBottom: 4 },
+  habitoNome: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Cores.claro.texto,
+    marginBottom: 4,
+  },
   habitoDetalhes: { flexDirection: "row" },
-  habitoCategoria: { fontSize: 14, color: Cores.claro.textoSecundario, marginRight: 12 },
+  habitoCategoria: {
+    fontSize: 14,
+    color: Cores.claro.textoSecundario,
+    marginRight: 12,
+  },
   habitoFrequencia: { fontSize: 14, color: Cores.claro.textoSecundario },
-  vazioContainer: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 40 },
-  vazioTexto: { fontSize: 18, fontWeight: "600", color: Cores.claro.texto, marginTop: 16, marginBottom: 8 },
-  vazioSubtitulo: { fontSize: 14, color: Cores.claro.textoSecundario, textAlign: "center", paddingHorizontal: 40 },
+  vazioContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  vazioTexto: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: Cores.claro.texto,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  vazioSubtitulo: {
+    fontSize: 14,
+    color: Cores.claro.textoSecundario,
+    textAlign: "center",
+    paddingHorizontal: 40,
+  },
   botaoAdicionar: {
     flexDirection: "row",
     alignItems: "center",
@@ -142,7 +178,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: "auto",
   },
-  botaoAdicionarTexto: { color: "white", fontSize: 16, fontWeight: "600", marginLeft: 8 },
+  botaoAdicionarTexto: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
 });
 
 export default HabitsScreen;
