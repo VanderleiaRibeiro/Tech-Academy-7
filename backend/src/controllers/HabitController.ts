@@ -50,6 +50,7 @@ export const listUserHabits = async (req: Request, res: Response) => {
     const habits = await HabitModel.findAll({
       where: { user_id },
       include: [HabitRecordModel],
+      order: [["id", "ASC"]],
     });
 
     return res.status(200).json(habits);
@@ -131,20 +132,33 @@ export const createHabitRecord = async (
         .json({ error: parsed.error.issues.map((e) => e.message) });
     }
 
+    const { date, completed = true } = parsed.data;
+
+    const existing = await HabitRecordModel.findOne({
+      where: { habit_id: habit.id, date },
+    });
+
+    if (existing) {
+      existing.set({ completed });
+      await existing.save();
+      return res.status(200).json(existing);
+    }
+
     const record = await HabitRecordModel.create({
       habit_id: habit.id,
-      ...parsed.data,
+      date,
+      completed,
     });
 
     return res.status(201).json(record);
   } catch (error) {
-    console.error("Erro ao criar registro de hábito:", error);
+    console.error("Erro ao criar/atualizar registro de hábito:", error);
     return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
 
 export const listHabitRecords = async (
-  req: Request<{ habitId: string }>,
+  req: Request<{ habitId: string }, any, any, { date?: string }>,
   res: Response
 ) => {
   try {
@@ -157,12 +171,46 @@ export const listHabitRecords = async (
     const habit = await HabitModel.findOne({ where: { id: habitId, user_id } });
     if (!habit) return res.status(404).json({ error: "Hábito não encontrado" });
 
+    const where: any = { habit_id: habit.id };
+    if (req.query?.date) where.date = req.query.date;
+
     const records = await HabitRecordModel.findAll({
-      where: { habit_id: habit.id },
+      where,
+      order: [["date", "DESC"]],
     });
+
     return res.status(200).json(records);
   } catch (error) {
     console.error("Erro ao listar registros de hábito:", error);
+    return res.status(500).json({ error: "Erro interno no servidor" });
+  }
+};
+
+export const deleteHabitRecordByDate = async (
+  req: Request<{ habitId: string }, any, any, { date?: string }>,
+  res: Response
+) => {
+  try {
+    const habitId = Number(req.params.habitId);
+    if (isNaN(habitId)) return res.status(400).json({ error: "ID inválido" });
+
+    const user_id = (req as any).user?.id;
+    if (!user_id) return res.status(401).json({ error: "Não autorizado" });
+
+    const { date } = req.query;
+    if (!date)
+      return res.status(400).json({ error: "Informe ?date=YYYY-MM-DD" });
+
+    const habit = await HabitModel.findOne({ where: { id: habitId, user_id } });
+    if (!habit) return res.status(404).json({ error: "Hábito não encontrado" });
+
+    const deleted = await HabitRecordModel.destroy({
+      where: { habit_id: habit.id, date },
+    });
+
+    return res.status(200).json({ deleted });
+  } catch (error) {
+    console.error("Erro ao remover registro de hábito:", error);
     return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };

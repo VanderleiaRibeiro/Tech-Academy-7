@@ -7,11 +7,9 @@ import User from "../models/UserModel";
 
 const router = Router();
 
-// ===== Auth básicas =====
 router.post("/register", UserController.createUser);
 router.post("/login", UserController.loginUser);
 
-// ===== Recuperação de senha =====
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body as { email?: string };
   if (!email) return res.status(400).json({ message: "Informe o e-mail" });
@@ -21,7 +19,7 @@ router.post("/forgot-password", async (req, res) => {
   const user = await User.findOne({ where: { email } });
   if (user) {
     const token = crypto.randomUUID();
-    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
 
     await user.update({ reset_token: token, reset_token_expires: expires });
 
@@ -50,9 +48,8 @@ router.post("/reset-password", async (req, res) => {
     return res.status(400).json({ message: "Token inválido ou expirado" });
   }
 
-  // ⚠️ NÃO faça bcrypt.hash aqui. Deixe o hook beforeUpdate hashear.
   await user.update({
-    password, // texto puro — o hook beforeUpdate vai hashear
+    password,
     reset_token: null,
     reset_token_expires: null,
   });
@@ -61,7 +58,7 @@ router.post("/reset-password", async (req, res) => {
 });
 
 router.post("/change-password", authMiddleware, async (req, res) => {
-  const userId = (req as any).user?.id; // assumindo que o middleware injeta user.id
+  const userId = (req as any).user?.id;
   const { currentPassword, newPassword } = req.body as {
     currentPassword?: string;
     newPassword?: string;
@@ -79,13 +76,11 @@ router.post("/change-password", authMiddleware, async (req, res) => {
   const ok = await user.validatePassword(currentPassword);
   if (!ok) return res.status(401).json({ message: "Senha atual incorreta" });
 
-  // ⚠️ NÃO fazer bcrypt.hash aqui — o hook beforeUpdate já faz o hash
   await user.update({ password: newPassword });
 
   return res.json({ ok: true });
 });
 
-// ===== Usuários =====
 router.get("/", UserController.getAllUsers);
 router.get("/:id", authMiddleware, UserController.getUserById);
 router.put("/:id", authMiddleware, UserController.updateUser);

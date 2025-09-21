@@ -1,4 +1,3 @@
-// src/telas/Home/Home.tsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View,
@@ -6,6 +5,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -13,22 +13,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Cores } from "../../constants/Colors";
 import Cabecalho from "../../components/Cabecalho";
 import api from "@/api/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TAB_HABITOS } from "@/navigation/MainTabs";
 import Svg, { Circle } from "react-native-svg";
 import { styles } from "./styles";
+import {
+  getTodayRecord,
+  setTodayRecord,
+  clearTodayRecord,
+} from "@/api/habitRecords";
 
 type HabitDTO = { id: number; name: string; description: string | null };
-
-const STORAGE_KEY = (dateISO: string) => `rvm:done:${dateISO}`;
-
-function todayISO(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
 type ProgressRingProps = {
   value: number;
@@ -84,63 +78,115 @@ const ProgressRing: React.FC<ProgressRingProps> = ({
   );
 };
 
+function firstName(full?: string | null) {
+  const t = (full ?? "").trim();
+  if (!t) return "";
+  return t.split(/\s+/)[0];
+}
+
 export default function Home() {
   const navigation = useNavigation<any>();
   const [habitos, setHabitos] = useState<HabitDTO[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [doneMap, setDoneMap] = useState<Record<number, boolean>>({});
-  const dateKey = todayISO();
 
-  const carregarHabitos = useCallback(async (): Promise<void> => {
+  const [userName, setUserName] = useState<string>("");
+
+  const [doneMap, setDoneMap] = useState<Record<number, boolean>>({});
+  const [syncing, setSyncing] = useState<number | null>(null);
+
+  const carregarUsuario = useCallback(async () => {
+    try {
+      const { data } = await api.get<{ name?: string }>("/users/me");
+      setUserName(data?.name ?? "");
+    } catch {
+      setUserName("");
+    }
+  }, []);
+
+  const carregarHabitos = useCallback(async (): Promise<HabitDTO[]> => {
     try {
       setLoading(true);
       const { data } = await api.get<HabitDTO[]>("/habits");
       setHabitos(data);
+      return data;
     } catch (e) {
       console.log("Erro ao carregar hábitos", e);
       setHabitos([]);
+      return [];
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const carregarConcluidos = useCallback(async (): Promise<void> => {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY(dateKey));
-    if (!raw) {
-      setDoneMap({});
-      return;
-    }
-    const parsed = JSON.parse(raw) as Record<string, boolean>;
-    const converted: Record<number, boolean> = {};
-    Object.keys(parsed).forEach((k) => {
-      converted[Number(k)] = parsed[k];
-    });
-    setDoneMap(converted);
-  }, [dateKey]);
+  const carregarConcluidosHoje = useCallback(
+    async (lista: HabitDTO[]): Promise<void> => {
+      try {
+        const entries = await Promise.all(
+          lista.map(async (h) => {
+            try {
+              const rec = await getTodayRecord(h.id);
+              return [h.id, !!rec?.completed] as const;
+            } catch {
+              return [h.id, false] as const;
+            }
+          })
+        );
+        const next: Record<number, boolean> = {};
+        entries.forEach(([id, val]) => (next[id] = val));
+        setDoneMap(next);
+      } catch (e) {
+        console.log("Erro ao carregar concluídos do dia", e);
+        setDoneMap({});
+      }
+    },
+    []
+  );
 
   useEffect(() => {
-    carregarHabitos();
-    carregarConcluidos();
-  }, [carregarHabitos, carregarConcluidos]);
+    (async () => {
+      await carregarUsuario();
+      const lista = await carregarHabitos();
+      await carregarConcluidosHoje(lista);
+    })();
+  }, [carregarUsuario, carregarHabitos, carregarConcluidosHoje]);
 
   useFocusEffect(
     useCallback(() => {
-      carregarHabitos();
-      carregarConcluidos();
-    }, [carregarHabitos, carregarConcluidos])
+      let active = true;
+      (async () => {
+        await carregarUsuario();
+        const lista = await carregarHabitos();
+        if (!active) return;
+        await carregarConcluidosHoje(lista);
+      })();
+      return () => {
+        active = false;
+      };
+    }, [carregarUsuario, carregarHabitos, carregarConcluidosHoje])
   );
 
   const toggleDone = useCallback(
     async (id: number): Promise<void> => {
-      const next: Record<number, boolean> = { ...doneMap, [id]: !doneMap[id] };
-      setDoneMap(next);
-      const toStore: Record<string, boolean> = {};
-      Object.keys(next).forEach((k) => {
-        toStore[k] = next[Number(k)];
-      });
-      await AsyncStorage.setItem(STORAGE_KEY(dateKey), JSON.stringify(toStore));
+      if (syncing !== null) return;
+      const currentlyDone = !!doneMap[id];
+
+      setDoneMap((prev) => ({ ...prev, [id]: !currentlyDone }));
+      setSyncing(id);
+
+      try {
+        if (currentlyDone) {
+          await clearTodayRecord(id);
+        } else {
+          await setTodayRecord(id, true);
+        }
+      } catch {
+        setDoneMap((prev) => ({ ...prev, [id]: currentlyDone }));
+        Alert.alert("Ops", "Não foi possível atualizar este hábito agora.");
+      } finally {
+        setSyncing(null);
+      }
     },
-    [doneMap, dateKey]
+    [doneMap, syncing]
   );
 
   const total = habitos.length;
@@ -153,13 +199,14 @@ export default function Home() {
     navigation.navigate(TAB_HABITOS, { screen: "CadastrarHabito" });
   };
 
+  const saudacao = userName ? `Olá, ${firstName(userName)}` : "Olá";
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Cores.claro.fundo }}>
-      {/* Header fixo com área segura */}
       <Cabecalho titulo="RVM Routine" />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Bom dia, Rodrigo 👋</Text>
+        <Text style={styles.title}>{saudacao}</Text>
         <Text style={styles.dateText}>
           {new Date().toLocaleDateString("pt-BR", {
             weekday: "long",
@@ -181,7 +228,7 @@ export default function Home() {
                 size={48}
                 color={Cores.claro.tonalidade}
               />
-              <Text style={styles.cardTitle}>Bem-vindo ao RVM Routine 🎉</Text>
+              <Text style={styles.cardTitle}>Bem-vindo ao RVM Routine</Text>
               <Text style={styles.cardSubtitle}>
                 Comece adicionando seu primeiro hábito para acompanhar sua
                 rotina.
@@ -194,7 +241,6 @@ export default function Home() {
           </>
         ) : (
           <>
-            {/* Bloco de progresso */}
             <View style={styles.progressCard}>
               <ProgressRing value={concluidos} total={total} />
               <View style={styles.progressSide}>
@@ -208,9 +254,10 @@ export default function Home() {
               </View>
             </View>
 
-            {/* Lista de hábitos — agora TODOS (sem slice) */}
             {habitos.map((h) => {
               const checked = !!doneMap[h.id];
+              const isSyncing = syncing === h.id;
+
               return (
                 <View key={h.id} style={styles.habitRow}>
                   <View style={{ flex: 1 }}>
@@ -221,12 +268,25 @@ export default function Home() {
                       </Text>
                     )}
                   </View>
+
                   <TouchableOpacity
-                    style={[styles.checkbox, checked && styles.checkboxChecked]}
+                    style={[
+                      styles.checkbox,
+                      checked && styles.checkboxChecked,
+                      isSyncing && { opacity: 0.6 },
+                    ]}
                     onPress={() => toggleDone(h.id)}
+                    disabled={isSyncing}
+                    activeOpacity={0.85}
                   >
-                    {checked && (
+                    {checked ? (
                       <Ionicons name="checkmark" size={18} color="#fff" />
+                    ) : (
+                      <Ionicons
+                        name="square-outline"
+                        size={18}
+                        color="#64748B"
+                      />
                     )}
                   </TouchableOpacity>
                 </View>

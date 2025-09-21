@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function guessLanBase(): string {
   const hostUri: string =
@@ -33,15 +34,27 @@ export function setAuthToken(token?: string) {
     delete api.defaults.headers.common.Authorization;
   }
 }
-api.interceptors.request.use((config: any) => {
+
+api.interceptors.request.use(async (config: any) => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+    if (token) {
+      config.headers = config.headers ?? {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (e) {
+    console.log("[AUTH ERR] Falha ao recuperar token:", e);
+  }
+
   console.log(
     "[REQ]",
     config.method?.toUpperCase(),
     config.baseURL + config.url,
-    config.data
+    config.data ?? ""
   );
   return config;
 });
+
 api.interceptors.response.use(
   (res) => {
     console.log("[RES]", res.status, res.data);
