@@ -4,7 +4,6 @@ import { Cores } from "../../constants/Colors";
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Cores.claro.fundo },
 
-  // conteúdo com mais respiro e espaço no final
   content: { padding: 16, paddingTop: 20, paddingBottom: 88, flexGrow: 1 },
 
   title: {
@@ -25,7 +24,6 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  // card vazio
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -60,7 +58,6 @@ export const styles = StyleSheet.create({
   },
   ctaText: { color: "#fff", fontWeight: "700", marginLeft: 8, fontSize: 15 },
 
-  // progresso
   progressCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -128,7 +125,6 @@ export const styles = StyleSheet.create({
   },
   checkboxChecked: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
 
-  // FAB flutuante no canto inferior direito
   fab: {
     width: 56,
     height: 56,

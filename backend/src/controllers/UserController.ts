@@ -15,9 +15,17 @@ const createUserSchema = z.object({
     .min(8, "A senha deve ter no mínimo 8 caracteres")
     .regex(/(?=.*[A-Z])/, "A senha deve conter pelo menos uma letra maiúscula")
     .regex(/(?=.*\d)/, "A senha deve conter pelo menos um número")
-    .regex(/(?=.*[@$!%*?&])/, "A senha deve conter pelo menos um caractere especial"),
+    .regex(
+      /(?=.*[@$!%*?&])/,
+      "A senha deve conter pelo menos um caractere especial"
+    ),
   url_img: z.string().url("URL inválida").nullable().optional(),
-  description: z.string().trim().max(500, "Descrição muito longa").nullable().optional(),
+  description: z
+    .string()
+    .trim()
+    .max(500, "Descrição muito longa")
+    .nullable()
+    .optional(),
 });
 
 const updateUserSchema = z
@@ -26,12 +34,23 @@ const updateUserSchema = z
     password: z
       .string()
       .min(8, "A senha deve ter no mínimo 8 caracteres")
-      .regex(/(?=.*[A-Z])/, "A senha deve conter pelo menos uma letra maiúscula")
+      .regex(
+        /(?=.*[A-Z])/,
+        "A senha deve conter pelo menos uma letra maiúscula"
+      )
       .regex(/(?=.*\d)/, "A senha deve conter pelo menos um número")
-      .regex(/(?=.*[@$!%*?&])/, "A senha deve conter pelo menos um caractere especial")
+      .regex(
+        /(?=.*[@$!%*?&])/,
+        "A senha deve conter pelo menos um caractere especial"
+      )
       .optional(),
     url_img: z.string().url("URL inválida").nullable().optional(),
-    description: z.string().trim().max(500, "Descrição muito longa").nullable().optional(),
+    description: z
+      .string()
+      .trim()
+      .max(500, "Descrição muito longa")
+      .nullable()
+      .optional(),
   })
   .strict();
 
@@ -57,7 +76,11 @@ function sendZod(res: Response, err: ZodError) {
 /* =========================
  * Controllers
  * ========================= */
-export const getAllUsers = async (_req: Request, res: Response, next: NextFunction) => {
+export const getAllUsers = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const users = await UserModel.findAll();
     return res.status(200).json(users); // toJSON do model já remove password
@@ -66,12 +89,17 @@ export const getAllUsers = async (_req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
+export const getUserById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const user = await UserModel.findByPk(id);
 
-    if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+    if (!user)
+      return res.status(404).json({ message: "Usuário não encontrado" });
     return res.status(200).json(user.toJSON());
   } catch (error) {
     if (error instanceof ZodError) return sendZod(res, error);
@@ -79,7 +107,11 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const createUser = async (req: Request, res: Response, next: NextFunction) => {
+export const createUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const raw = req.body ?? {};
 
@@ -95,7 +127,8 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     const data = createUserSchema.parse(normalized);
 
     const existing = await UserModel.findOne({ where: { email: data.email } });
-    if (existing) return res.status(409).json({ message: "E-mail já cadastrado" });
+    if (existing)
+      return res.status(409).json({ message: "E-mail já cadastrado" });
 
     const user = await UserModel.create(data);
     return res.status(201).json(user.toJSON());
@@ -105,7 +138,11 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const loginUser = async (req: Request, res: Response, next: NextFunction) => {
+export const loginUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const raw = req.body ?? {};
     const payload = loginSchema.parse({
@@ -116,7 +153,8 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     const user = await UserModel.findOne({
       where: { email: payload.email.trim().toLowerCase() },
     });
-    if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+    if (!user)
+      return res.status(404).json({ message: "Usuário não encontrado" });
 
     const valid = await user.validatePassword(payload.password);
     if (!valid) return res.status(401).json({ message: "Senha inválida" });
@@ -129,13 +167,18 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
-export const updateUser = async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+export const updateUser = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const updates = updateUserSchema.parse(req.body);
 
     const user = await UserModel.findByPk(id);
-    if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+    if (!user)
+      return res.status(404).json({ message: "Usuário não encontrado" });
 
     const loggedUserId = (req as any).user?.id;
     if (!loggedUserId || Number(loggedUserId) !== Number(user.id)) {
@@ -163,7 +206,8 @@ export const destroyUserById = async (
     const { id } = idParamSchema.parse(req.params);
 
     const user = await UserModel.findByPk(id);
-    if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+    if (!user)
+      return res.status(404).json({ message: "Usuário não encontrado" });
 
     const loggedUserId = (req as any).user?.id;
     if (!loggedUserId || Number(loggedUserId) !== Number(user.id)) {
