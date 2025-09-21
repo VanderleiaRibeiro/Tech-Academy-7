@@ -53,7 +53,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.removeItem("@user");
     delete api.defaults.headers.common.Authorization;
     setUser(null);
-    navigation?.reset?.({ index: 0, routes: [{ name: "Login" }] });
   };
 
   return (

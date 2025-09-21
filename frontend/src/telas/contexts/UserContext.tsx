@@ -1,10 +1,16 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "@/api/api";
 
 export interface User {
   id: number;
-  name: string | null;          // backend pode vir null
+  name: string | null; // backend pode vir null
   email: string;
   url_img?: string | null;
   description?: string | null;
@@ -35,7 +41,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem("@token"),
           AsyncStorage.getItem("@user"),
         ]);
-        if (token) api.defaults.headers.common.Authorization = `Bearer ${token}`;
+        if (token)
+          api.defaults.headers.common.Authorization = `Bearer ${token}`;
         if (rawUser) setUser(JSON.parse(rawUser));
       } finally {
         setBooting(false);
@@ -55,7 +62,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.removeItem("@user");
     delete api.defaults.headers.common.Authorization;
     setUser(null);
-    navigation?.reset?.({ index: 0, routes: [{ name: "Login" }] });
   };
 
   return (

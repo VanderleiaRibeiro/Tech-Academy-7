@@ -10,19 +10,19 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./styles";
 import Cabecalho from "../../components/Cabecalho";
 import { useUser } from "../../telas/contexts/UserContext";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "@/api/api";
+import { Cores } from "../../constants/Colors"; // 👈 adicionado
 
 // ===== Tipos =====
 type UserDTO = {
   id: number;
   name: string | null;
   email: string;
-  url_img?: string | null;
-  description?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -37,6 +37,7 @@ export type RootStackParamList = {
   Signup: undefined;
   Home: undefined;
   MainTabs: undefined;
+  ForgotPassword: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
@@ -47,7 +48,7 @@ export default function LoginScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { login } = useUser(); // << usar o contexto
+  const { login } = useUser();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -66,10 +67,7 @@ export default function LoginScreen({ navigation }: Props) {
       const { token, user } = data;
       if (!token) throw new Error("Token ausente na resposta.");
 
-      // Persistir via contexto (AsyncStorage + axios + state)
       await login(user, token);
-
-      // NÃO navegue/reset aqui; o RootNavigator troca pra MainTabs quando user != null
       Alert.alert("Sucesso", `Bem-vindo, ${user?.name ?? user?.email}!`);
     } catch (e: any) {
       const status = e?.response?.status;
@@ -100,76 +98,75 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={{ flex: 1, backgroundColor: Cores.claro.fundo }}>
+      {/* Cabeçalho fixo no topo */}
+      <Cabecalho titulo="RVM Routine" />
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Cabecalho />
-        <Text style={styles.title}>Entrar</Text>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Entrar</Text>
 
-        <View style={styles.inputWrapper}>
-          <Text style={styles.label}>E-mail</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite seu e-mail"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.label}>Senha</Text>
-          <View style={styles.passwordContainer}>
+          <View style={styles.inputWrapper}>
+            <Text style={styles.label}>E-mail</Text>
             <TextInput
-              style={styles.inputPassword}
-              placeholder="Digite sua senha"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
+              style={styles.input}
+              placeholder="Digite seu e-mail"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
-            <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-              <Ionicons
-                name={showPassword ? "eye-off" : "eye"}
-                size={24}
-                color="gray"
+          </View>
+
+          <View style={styles.inputWrapper}>
+            <Text style={styles.label}>Senha</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.inputPassword}
+                placeholder="Digite sua senha"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
               />
+              <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
+                <Ionicons
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={24}
+                  color="gray"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, loading && { opacity: 0.6 }]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? "Entrando..." : "Entrar"}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.linksContainer}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("ForgotPassword")}
+            >
+              <Text style={styles.linkText}>Esqueci a senha</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
+              <Text style={styles.linkText}>Criar conta</Text>
             </TouchableOpacity>
           </View>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.button, loading && { opacity: 0.6 }]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? "Entrando..." : "Entrar"}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.linksContainer}>
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert(
-                "Em breve",
-                "Fluxo de recuperação de senha ainda não implementado."
-              )
-            }
-          >
-            <Text style={styles.linkText}>Esqueci a senha</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
-            <Text style={styles.linkText}>Criar conta</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

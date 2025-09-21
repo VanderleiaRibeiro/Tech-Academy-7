@@ -1,25 +1,28 @@
 import { StyleSheet } from "react-native";
+import { Cores } from "../../constants/Colors"; // 👈 adicionado
 
 export const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "flex-start",
-    alignItems: "center",
-    paddingTop: 100,
+    alignItems: "stretch",
     paddingHorizontal: 30,
-    backgroundColor: "#fff",
+    paddingBottom: 24,
+    backgroundColor: Cores.claro.fundo, // 👈 agora usa fundo padrão cinza claro
   },
 
   title: {
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 20,
+    textAlign: "center",
   },
 
   inputWrapper: {
     width: "100%",
     maxWidth: 400,
     marginBottom: 14.9,
+    alignSelf: "center",
   },
 
   label: {
@@ -35,6 +38,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 12,
+    backgroundColor: "#fff", // 👈 inputs continuam brancos
   },
 
   passwordContainer: {
@@ -46,6 +50,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 0,
+    backgroundColor: "#fff", // 👈 campo de senha também branco
   },
 
   inputPassword: {
@@ -61,6 +66,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     marginBottom: 15,
+    alignSelf: "center",
   },
 
   buttonText: {
