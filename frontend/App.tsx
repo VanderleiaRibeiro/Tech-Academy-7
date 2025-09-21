@@ -8,6 +8,8 @@ import Login from "./src/telas/Login/Login";
 import Signup from "./src/telas/Signup/Signup";
 import EditProfile from "./src/telas/EditProfile/EditProfile";
 import MainTabs from "./src/navigation/MainTabs";
+import ForgotPassword from "./src/telas/ForgotPassword/ForgotPassword";
+import ResetPassword from "./src/telas/ResetPassword/ResetPassword";
 
 import { UserProvider, useUser } from "./src/telas/contexts/UserContext";
 
@@ -16,6 +18,8 @@ export type RootStackParamList = {
   Signup: undefined;
   MainTabs: undefined;
   EditProfile: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { token?: string; mode?: "reset" | "loggedIn" } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,16 +36,22 @@ function RootNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      key={user ? "app" : "auth"} // 👈 força recriação e limpa o stack
+      screenOptions={{ headerShown: false }}
+    >
       {user ? (
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="EditProfile" component={EditProfile} />
+          <Stack.Screen name="ResetPassword" component={ResetPassword} />
         </>
       ) : (
         <>
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Signup" component={Signup} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+          <Stack.Screen name="ResetPassword" component={ResetPassword} />
         </>
       )}
     </Stack.Navigator>

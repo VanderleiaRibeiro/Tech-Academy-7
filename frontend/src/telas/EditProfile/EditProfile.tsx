@@ -9,11 +9,12 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { styles } from "./styles";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { editStyles as styles } from "./editProfile.styles";
 import Cabecalho from "../../components/Cabecalho";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { User, useUser } from "../../telas/contexts/UserContext";
+import { Cores } from "../../constants/Colors";
 import api from "@/api/api";
 
 type RootStackParamList = {
@@ -29,9 +30,6 @@ export default function EditProfileScreen({ navigation }: Props) {
 
   const [nome, setNome] = useState<string>(user?.name ?? "");
   const [email] = useState<string>(user?.email ?? "");
-  const [senha, setSenha] = useState<string>("");
-  const [confirmarSenha, setConfirmarSenha] = useState<string>("");
-  const [mostrarSenha, setMostrarSenha] = useState<boolean>(false);
   const [salvando, setSalvando] = useState<boolean>(false);
   const [excluindo, setExcluindo] = useState<boolean>(false);
 
@@ -43,38 +41,19 @@ export default function EditProfileScreen({ navigation }: Props) {
         Alert.alert("Sessão expirada", "Faça login novamente.");
         return;
       }
-      if (!nome.trim()) {
+      const trimmed = nome.trim();
+      if (!trimmed) {
         Alert.alert("Atenção", "O nome não pode estar vazio.");
         return;
       }
 
-      const payload: Record<string, unknown> = { name: nome.trim() };
-      if (senha || confirmarSenha) {
-        if (senha !== confirmarSenha) {
-          Alert.alert("Erro", "As senhas não coincidem!");
-          return;
-        }
-        const forte =
-          senha.length >= 8 &&
-          /[A-Z]/.test(senha) &&
-          /\d/.test(senha) &&
-          /[@$!%*?&]/.test(senha);
-        if (!forte) {
-          Alert.alert(
-            "Senha fraca",
-            "A senha deve ter 8+ caracteres, incluir 1 maiúscula, 1 número e 1 símbolo."
-          );
-          return;
-        }
-        payload.password = senha;
-      }
-
       setSalvando(true);
-      const { data: updated } = await api.put<User>(
-        `/users/${user.id}`,
-        payload
-      );
-      setUser(updated);
+      const { data: updated } = await api.put<User>(`/users/${user.id}`, {
+        name: trimmed,
+      });
+
+      setUser(updated ?? { ...user, name: trimmed });
+
       Alert.alert("Sucesso", "Perfil atualizado!", [
         { text: "OK", onPress: goBack },
       ]);
@@ -89,7 +68,7 @@ export default function EditProfileScreen({ navigation }: Props) {
     } finally {
       setSalvando(false);
     }
-  }, [user?.id, nome, senha, confirmarSenha, setUser, goBack]);
+  }, [user, nome, setUser, goBack]);
 
   const handleDelete = useCallback(() => {
     if (!user?.id) {
@@ -108,7 +87,7 @@ export default function EditProfileScreen({ navigation }: Props) {
             try {
               setExcluindo(true);
               await api.delete(`/users/${user.id}`);
-              await logout(navigation);
+              await logout();
             } catch (e: any) {
               const msg =
                 e?.response?.data?.message ??
@@ -122,105 +101,87 @@ export default function EditProfileScreen({ navigation }: Props) {
         },
       ]
     );
-  }, [user?.id, logout, navigation]);
+  }, [user, logout]);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={{ flex: 1, backgroundColor: Cores.claro.fundo }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Cabecalho />
-        <Text style={styles.title}>Editar Perfil</Text>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.label}>Nome completo</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite seu nome"
-            value={nome}
-            onChangeText={setNome}
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.label}>E-mail</Text>
-          <TextInput
-            style={[
-              styles.input,
-              { backgroundColor: "#F3F4F6", color: "#6B7280" },
-            ]}
-            value={email}
-            editable={false}
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.label}>Senha (opcional)</Text>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.inputPassword}
-              placeholder="Nova senha (opcional)"
-              secureTextEntry={!mostrarSenha}
-              value={senha}
-              onChangeText={setSenha}
-            />
-            <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
-              <Ionicons
-                name={mostrarSenha ? "eye-off" : "eye"}
-                size={24}
-                color="gray"
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.label}>Confirmar Senha</Text>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.inputPassword}
-              placeholder="Confirme a nova senha"
-              secureTextEntry={!mostrarSenha}
-              value={confirmarSenha}
-              onChangeText={setConfirmarSenha}
-            />
-            <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
-              <Ionicons
-                name={mostrarSenha ? "eye-off" : "eye"}
-                size={24}
-                color="gray"
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.button, (salvando || excluindo) && { opacity: 0.7 }]}
-          onPress={handleUpdate}
-          disabled={salvando || excluindo}
-        >
-          <Text style={styles.buttonText}>
-            {salvando ? "Salvando..." : "Salvar Alterações"}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.deleteButton,
-            (salvando || excluindo) && { opacity: 0.7 },
+        <ScrollView
+          contentContainerStyle={[
+            styles.container,
+            { flexGrow: 1, backgroundColor: Cores.claro.fundo },
           ]}
-          onPress={handleDelete}
-          disabled={salvando || excluindo}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.deleteButtonText}>
-            {excluindo ? "Excluindo..." : "Excluir Conta"}
+          {/* Header padronizado: seta + título */}
+          <Cabecalho titulo="Editar Perfil" mostrarVoltar onVoltar={goBack} />
+
+          {/* Subtítulo discreto */}
+          <Text
+            style={{
+              marginTop: 4,
+              marginBottom: 12,
+              color: "#6B7280",
+              textAlign: "center",
+            }}
+          >
+            Atualize seu nome. O e-mail não pode ser alterado.
           </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          {/* Nome */}
+          <View style={styles.inputWrapper}>
+            <Text style={styles.label}>Nome completo</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite seu nome"
+              value={nome}
+              onChangeText={setNome}
+            />
+          </View>
+
+          {/* E-mail (somente leitura) */}
+          <View style={styles.inputWrapper}>
+            <Text style={styles.label}>E-mail</Text>
+            <TextInput
+              style={[
+                styles.input,
+                { backgroundColor: "#F3F4F6", color: "#6B7280" },
+              ]}
+              value={email}
+              editable={false}
+            />
+          </View>
+
+          {/* Botões */}
+          <TouchableOpacity
+            style={[styles.button, (salvando || excluindo) && { opacity: 0.7 }]}
+            onPress={handleUpdate}
+            disabled={salvando || excluindo}
+          >
+            <Text style={styles.buttonText}>
+              {salvando ? "Salvando..." : "Salvar Alterações"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.deleteButton,
+              (salvando || excluindo) && { opacity: 0.7 },
+            ]}
+            onPress={handleDelete}
+            disabled={salvando || excluindo}
+          >
+            <Text style={styles.deleteButtonText}>
+              {excluindo ? "Excluindo..." : "Excluir Conta"}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 24 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

@@ -1,3 +1,4 @@
+// src/telas/Habitos/HabitsScreen.tsx
 import React, { useCallback, useState } from "react";
 import {
   View,
@@ -8,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Cores } from "../../constants/Colors";
 import Cabecalho from "../../components/Cabecalho";
 import api from "@/api/api";
@@ -25,7 +27,6 @@ type HabitDTO = {
 
 type RootStackParamList = {
   Habitos: undefined;
-  CadastrarHabito: undefined;
   EditarHabito: { habito: HabitDTO };
 };
 
@@ -62,13 +63,11 @@ const HabitsScreen: React.FC = () => {
     >
       <View style={styles.habitoInfo}>
         <Text style={styles.habitoNome}>{item.name}</Text>
-        <View style={styles.habitoDetalhes}>
-          {!!item.description && (
-            <Text style={styles.habitoCategoria} numberOfLines={1}>
-              {item.description}
-            </Text>
-          )}
-        </View>
+        {!!item.description && (
+          <Text style={styles.habitoCategoria} numberOfLines={1}>
+            {item.description}
+          </Text>
+        )}
       </View>
       <Ionicons
         name="chevron-forward"
@@ -79,49 +78,41 @@ const HabitsScreen: React.FC = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <Cabecalho titulo="Meus Hábitos" />
-
-      <View style={styles.conteudo}>
-        {loading ? (
-          <ActivityIndicator style={{ marginTop: 24 }} />
-        ) : habitos.length === 0 ? (
-          <View style={styles.vazioContainer}>
-            <Ionicons
-              name="list-outline"
-              size={64}
-              color={Cores.claro.textoSecundario}
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <View style={styles.container}>
+        <Cabecalho titulo="Meus Hábitos" />
+        <View style={styles.conteudo}>
+          {loading ? (
+            <ActivityIndicator style={{ marginTop: 24 }} />
+          ) : habitos.length === 0 ? (
+            <View style={styles.vazioContainer}>
+              <Ionicons
+                name="list-outline"
+                size={64}
+                color={Cores.claro.textoSecundario}
+              />
+              <Text style={styles.vazioTexto}>Nenhum hábito cadastrado</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={habitos}
+              renderItem={renderItem}
+              keyExtractor={(item) => String(item.id)}
+              contentContainerStyle={styles.lista}
             />
-            <Text style={styles.vazioTexto}>Nenhum hábito cadastrado</Text>
-            <Text style={styles.vazioSubtitulo}>
-              Comece adicionando seu primeiro hábito para acompanhar sua rotina.
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={habitos}
-            renderItem={renderItem}
-            keyExtractor={(item) => String(item.id)}
-            contentContainerStyle={styles.lista}
-          />
-        )}
-
-        <TouchableOpacity
-          style={styles.botaoAdicionar}
-          onPress={() => navigation.navigate("CadastrarHabito")}
-        >
-          <Ionicons name="add" size={24} color="white" />
-          <Text style={styles.botaoAdicionarTexto}>Cadastrar hábito</Text>
-        </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: Cores.claro.fundo },
   container: { flex: 1, backgroundColor: Cores.claro.fundo },
   conteudo: { flex: 1, padding: 16 },
   lista: { paddingBottom: 16 },
+
   habitoItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -143,13 +134,11 @@ const styles = StyleSheet.create({
     color: Cores.claro.texto,
     marginBottom: 4,
   },
-  habitoDetalhes: { flexDirection: "row" },
   habitoCategoria: {
     fontSize: 14,
     color: Cores.claro.textoSecundario,
-    marginRight: 12,
   },
-  habitoFrequencia: { fontSize: 14, color: Cores.claro.textoSecundario },
+
   vazioContainer: {
     flex: 1,
     alignItems: "center",
@@ -161,28 +150,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: Cores.claro.texto,
     marginTop: 16,
-    marginBottom: 8,
-  },
-  vazioSubtitulo: {
-    fontSize: 14,
-    color: Cores.claro.textoSecundario,
-    textAlign: "center",
-    paddingHorizontal: 40,
-  },
-  botaoAdicionar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Cores.claro.tonalidade,
-    padding: 16,
-    borderRadius: 8,
-    marginTop: "auto",
-  },
-  botaoAdicionarTexto: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
   },
 });
 

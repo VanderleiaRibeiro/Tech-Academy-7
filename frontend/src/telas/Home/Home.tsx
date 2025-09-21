@@ -1,206 +1,248 @@
-import React, { useCallback, useMemo, useState } from "react";
+// src/telas/Home/Home.tsx
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
-  ListRenderItem,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
-
-import { styles } from "./styles";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Cores } from "../../constants/Colors";
 import Cabecalho from "../../components/Cabecalho";
 import api from "@/api/api";
-import { useUser } from "@/telas/contexts/UserContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TAB_HABITOS } from "@/navigation/MainTabs";
+import Svg, { Circle } from "react-native-svg";
+import { styles } from "./styles";
 
-type HabitUI = {
-  id: string;
-  title: string;
-  category: string;
-  times?: string[];
-  doneToday: boolean;
+type HabitDTO = { id: number; name: string; description: string | null };
+
+const STORAGE_KEY = (dateISO: string) => `rvm:done:${dateISO}`;
+
+function todayISO(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+type ProgressRingProps = {
+  value: number;
+  total: number;
+  size?: number;
+  stroke?: number;
 };
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
-const extract = (
-  str: string | null | undefined,
-  re: RegExp,
-  fallback = "—"
-) => {
-  if (!str) return fallback;
-  const m = str.match(re);
-  return (m?.[1] || fallback).trim();
+const ProgressRing: React.FC<ProgressRingProps> = ({
+  value,
+  total,
+  size = 92,
+  stroke = 8,
+}) => {
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = total > 0 ? Math.min(1, Math.max(0, value / total)) : 0;
+  const dashoffset = circumference * (1 - progress);
+
+  return (
+    <View style={{ width: size, height: size }}>
+      <Svg width={size} height={size}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#E5E7EB"
+          strokeWidth={stroke}
+          fill="none"
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={Cores.claro.tonalidade}
+          strokeWidth={stroke}
+          fill="none"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={dashoffset}
+          strokeLinecap="round"
+          rotation="-90"
+          originX={size / 2}
+          originY={size / 2}
+        />
+      </Svg>
+      <View style={styles.ringCenter}>
+        <Text style={styles.ringNumber}>
+          {value}/{total}
+        </Text>
+        <Text style={styles.ringLabel}>hábitos</Text>
+      </View>
+    </View>
+  );
 };
 
 export default function Home() {
-  const [habits, setHabits] = useState<HabitUI[]>([]);
-  const { user } = useUser();
+  const navigation = useNavigation<any>();
+  const [habitos, setHabitos] = useState<HabitDTO[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [doneMap, setDoneMap] = useState<Record<number, boolean>>({});
+  const dateKey = todayISO();
 
-  const displayName = useMemo(() => {
-    const byName = (user?.name || "").trim();
-    if (byName) return byName;
-    if (user?.email) return user.email.split("@")[0];
-    return "você";
-  }, [user?.name, user?.email]);
-
-  const loadHabits = useCallback(async () => {
+  const carregarHabitos = useCallback(async (): Promise<void> => {
     try {
-      if (!user) return;
-
-      const { data } = await api.get("/habits");
-
-      const tdy = todayISO();
-      const mapped: HabitUI[] = (Array.isArray(data) ? data : []).map(
-        (h: any) => {
-          const desc = h?.description ?? null;
-          const records: any[] = h?.HabitRecords || h?.habit_records || [];
-
-          const doneToday = records.some((r: any) => {
-            const d = String(r?.date ?? "");
-            const status = String(r?.status ?? "").toLowerCase();
-            const completed = Boolean(r?.completed);
-            return d === tdy && (completed || !status || status === "done");
-          });
-
-          return {
-            id: String(h.id),
-            title: h.name ?? "Hábito",
-            category: extract(desc, /Categoria:\s*([^|]+)/),
-            times: extract(desc, /Horários:\s*([^|]+)/, "")
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean),
-            doneToday,
-          };
-        }
-      );
-
-      setHabits(mapped);
-    } catch (err) {
-      console.error("Erro ao carregar hábitos:", err);
-      setHabits([]);
+      setLoading(true);
+      const { data } = await api.get<HabitDTO[]>("/habits");
+      setHabitos(data);
+    } catch (e) {
+      console.log("Erro ao carregar hábitos", e);
+      setHabitos([]);
+    } finally {
+      setLoading(false);
     }
-  }, [user]);
+  }, []);
+
+  const carregarConcluidos = useCallback(async (): Promise<void> => {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY(dateKey));
+    if (!raw) {
+      setDoneMap({});
+      return;
+    }
+    const parsed = JSON.parse(raw) as Record<string, boolean>;
+    const converted: Record<number, boolean> = {};
+    Object.keys(parsed).forEach((k) => {
+      converted[Number(k)] = parsed[k];
+    });
+    setDoneMap(converted);
+  }, [dateKey]);
+
+  useEffect(() => {
+    carregarHabitos();
+    carregarConcluidos();
+  }, [carregarHabitos, carregarConcluidos]);
 
   useFocusEffect(
     useCallback(() => {
-      loadHabits();
-    }, [loadHabits])
+      carregarHabitos();
+      carregarConcluidos();
+    }, [carregarHabitos, carregarConcluidos])
   );
 
-  const total = habits.length;
-  const done = useMemo(
-    () => habits.filter((h) => h.doneToday).length,
-    [habits]
+  const toggleDone = useCallback(
+    async (id: number): Promise<void> => {
+      const next: Record<number, boolean> = { ...doneMap, [id]: !doneMap[id] };
+      setDoneMap(next);
+      const toStore: Record<string, boolean> = {};
+      Object.keys(next).forEach((k) => {
+        toStore[k] = next[Number(k)];
+      });
+      await AsyncStorage.setItem(STORAGE_KEY(dateKey), JSON.stringify(toStore));
+    },
+    [doneMap, dateKey]
   );
 
-  const toggle = useCallback((id: string) => {
-    setHabits((prev) =>
-      prev.map((h) => (h.id === id ? { ...h, doneToday: !h.doneToday } : h))
-    );
-  }, []);
-
-  const renderItem: ListRenderItem<HabitUI> = ({ item }) => (
-    <View style={styles.habitCard}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.habitTitle}>{item.title}</Text>
-        <Text style={styles.habitMeta}>
-          {item.category} · {item.times?.[0] ?? "--:--"}
-        </Text>
-      </View>
-      <TouchableOpacity
-        onPress={() => toggle(item.id)}
-        style={[styles.check, item.doneToday && styles.checkOn]}
-      >
-        {item.doneToday ? (
-          <Ionicons name="checkmark" size={18} color="#FFF" />
-        ) : (
-          <View style={styles.checkEmpty} />
-        )}
-      </TouchableOpacity>
-    </View>
+  const total = habitos.length;
+  const concluidos = useMemo(
+    () => habitos.filter((h) => !!doneMap[h.id]).length,
+    [habitos, doneMap]
   );
+
+  const irCadastrarHabito = (): void => {
+    navigation.navigate(TAB_HABITOS, { screen: "CadastrarHabito" });
+  };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Cabecalho />
+    <SafeAreaView style={{ flex: 1, backgroundColor: Cores.claro.fundo }}>
+      {/* Header fixo com área segura */}
+      <Cabecalho titulo="RVM Routine" />
 
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.hello}>Bom dia, {displayName} 👋</Text>
-            <Text style={styles.date}>
-              {new Date().toLocaleDateString("pt-BR", {
-                weekday: "long",
-                day: "2-digit",
-                month: "long",
-              })}
-            </Text>
-          </View>
-          <Ionicons name="settings-outline" size={22} color="#222" />
-        </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Bom dia, Rodrigo 👋</Text>
+        <Text style={styles.dateText}>
+          {new Date().toLocaleDateString("pt-BR", {
+            weekday: "long",
+            day: "2-digit",
+            month: "long",
+          })}
+        </Text>
 
-        {total === 0 ? (
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 32 }} />
+        ) : total === 0 ? (
           <>
-            <View style={styles.progressCircle}>
-              <Text style={styles.progressCenterText}>0/0{"\n"}hábitos</Text>
-            </View>
-
+            <Text style={styles.subtitle}>
+              Comece adicionando seu primeiro hábito
+            </Text>
             <View style={styles.card}>
               <Ionicons
                 name="cube-outline"
-                size={64}
-                color="#6C8FDB"
-                style={{ marginBottom: 8, alignSelf: "center" }}
+                size={48}
+                color={Cores.claro.tonalidade}
               />
               <Text style={styles.cardTitle}>Bem-vindo ao RVM Routine 🎉</Text>
               <Text style={styles.cardSubtitle}>
                 Comece adicionando seu primeiro hábito para acompanhar sua
                 rotina.
               </Text>
+              <TouchableOpacity style={styles.cta} onPress={irCadastrarHabito}>
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={styles.ctaText}>Cadastrar hábito</Text>
+              </TouchableOpacity>
             </View>
           </>
         ) : (
           <>
-            <View style={styles.summaryCard}>
-              <View style={styles.fakeRing}>
-                <Text style={styles.ringText}>
-                  {done}/{total}
-                  {"\n"}hábitos
+            {/* Bloco de progresso */}
+            <View style={styles.progressCard}>
+              <ProgressRing value={concluidos} total={total} />
+              <View style={styles.progressSide}>
+                <Text style={styles.progressTitle}>
+                  {concluidos}/{total} hábitos
                 </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.summaryTitle}>
-                  {done}/{total} hábitos concluídos
-                </Text>
-                <Text style={styles.summaryHint}>
-                  {done === total
-                    ? "Perfeito! Todos concluídos hoje."
-                    : "Você está no caminho certo!"}
+                <Text style={styles.progressSubtitle}>concluídos</Text>
+                <Text style={styles.progressHint}>
+                  Você está no caminho certo!
                 </Text>
               </View>
             </View>
 
-            <FlatList
-              data={habits}
-              keyExtractor={(i) => i.id}
-              renderItem={renderItem}
-              contentContainerStyle={{ paddingBottom: 24 }}
-              scrollEnabled={false}
-            />
+            {/* Lista de hábitos — agora TODOS (sem slice) */}
+            {habitos.map((h) => {
+              const checked = !!doneMap[h.id];
+              return (
+                <View key={h.id} style={styles.habitRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.habitName}>{h.name}</Text>
+                    {!!h.description && (
+                      <Text style={styles.habitMeta} numberOfLines={1}>
+                        {h.description}
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.checkbox, checked && styles.checkboxChecked]}
+                    onPress={() => toggleDone(h.id)}
+                  >
+                    {checked && (
+                      <Ionicons name="checkmark" size={18} color="#fff" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+
+            <TouchableOpacity
+              style={[styles.fab, { alignSelf: "flex-end" }]}
+              onPress={irCadastrarHabito}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="add" size={26} color="#fff" />
+            </TouchableOpacity>
           </>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
