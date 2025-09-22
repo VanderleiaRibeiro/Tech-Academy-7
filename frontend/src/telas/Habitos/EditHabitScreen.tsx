@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { CommonActions } from "@react-navigation/native";
 import { Cores } from "../../constants/Colors";
 import Cabecalho from "../../components/Cabecalho";
 import api from "@/api/api";
@@ -114,6 +115,14 @@ const EditHabitScreen: React.FC<Props> = ({ navigation, route }) => {
     setHorarios((prev) => prev.map((h, i) => (i === index ? valor : h)));
   };
 
+  const voltarParaLista = () =>
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "HabitosList" as never }],
+      })
+    );
+
   const onSalvar = async () => {
     const nomeTrim = nome.trim();
     if (!nomeTrim) {
@@ -139,7 +148,7 @@ const EditHabitScreen: React.FC<Props> = ({ navigation, route }) => {
       });
 
       Alert.alert("Sucesso", "Hábito atualizado com sucesso!", [
-        { text: "OK", onPress: () => navigation.goBack() },
+        { text: "OK", onPress: voltarParaLista },
       ]);
     } catch (e: unknown) {
       const err = e as any;
@@ -162,7 +171,7 @@ const EditHabitScreen: React.FC<Props> = ({ navigation, route }) => {
     try {
       await api.delete(`/habits/${habito.id}`);
       showInfo("Sucesso", "Hábito excluído com sucesso!");
-      navigation.goBack();
+      voltarParaLista();
     } catch (e: unknown) {
       const err = e as any;
       const msg =
