@@ -21,6 +21,7 @@ import {
   setTodayRecord,
   clearTodayRecord,
 } from "@/api/habitRecords";
+import { useUser } from "@/telas/contexts/UserContext";
 
 type HabitDTO = { id: number; name: string; description: string | null };
 
@@ -78,30 +79,29 @@ const ProgressRing: React.FC<ProgressRingProps> = ({
   );
 };
 
+function capitalize(s: string) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 function firstName(full?: string | null) {
   const t = (full ?? "").trim();
   if (!t) return "";
-  return t.split(/\s+/)[0];
+  const base = t.includes("@") ? t.split("@")[0] : t.split(/\s+/)[0];
+  return capitalize(base);
 }
 
 export default function Home() {
   const navigation = useNavigation<any>();
+  const { user } = useUser();
   const [habitos, setHabitos] = useState<HabitDTO[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
-  const [userName, setUserName] = useState<string>("");
-
   const [doneMap, setDoneMap] = useState<Record<number, boolean>>({});
   const [syncing, setSyncing] = useState<number | null>(null);
 
-  const carregarUsuario = useCallback(async () => {
-    try {
-      const { data } = await api.get<{ name?: string }>("/users/me");
-      setUserName(data?.name ?? "");
-    } catch {
-      setUserName("");
-    }
-  }, []);
+  const [mostrarConcluidos, setMostrarConcluidos] = useState(true);
+
+  const displayName = firstName(user?.name) || firstName(user?.email);
+  const saudacao = `Olá${displayName ? `, ${displayName}` : ""}`;
 
   const carregarHabitos = useCallback(async (): Promise<HabitDTO[]> => {
     try {
@@ -144,17 +144,15 @@ export default function Home() {
 
   useEffect(() => {
     (async () => {
-      await carregarUsuario();
       const lista = await carregarHabitos();
       await carregarConcluidosHoje(lista);
     })();
-  }, [carregarUsuario, carregarHabitos, carregarConcluidosHoje]);
+  }, [carregarHabitos, carregarConcluidosHoje]);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       (async () => {
-        await carregarUsuario();
         const lista = await carregarHabitos();
         if (!active) return;
         await carregarConcluidosHoje(lista);
@@ -162,7 +160,7 @@ export default function Home() {
       return () => {
         active = false;
       };
-    }, [carregarUsuario, carregarHabitos, carregarConcluidosHoje])
+    }, [carregarHabitos, carregarConcluidosHoje])
   );
 
   const toggleDone = useCallback(
@@ -195,11 +193,18 @@ export default function Home() {
     [habitos, doneMap]
   );
 
+  const pendentesHoje = useMemo(
+    () => habitos.filter((h) => !doneMap[h.id]),
+    [habitos, doneMap]
+  );
+  const concluidosHoje = useMemo(
+    () => habitos.filter((h) => !!doneMap[h.id]),
+    [habitos, doneMap]
+  );
+
   const irCadastrarHabito = (): void => {
     navigation.navigate(TAB_HABITOS, { screen: "CadastrarHabito" });
   };
-
-  const saudacao = userName ? `Olá, ${firstName(userName)}` : "Olá";
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Cores.claro.fundo }}>
@@ -219,9 +224,6 @@ export default function Home() {
           <ActivityIndicator style={{ marginTop: 32 }} />
         ) : total === 0 ? (
           <>
-            <Text style={styles.subtitle}>
-              Comece adicionando seu primeiro hábito
-            </Text>
             <View style={styles.card}>
               <Ionicons
                 name="cube-outline"
@@ -253,11 +255,16 @@ export default function Home() {
                 </Text>
               </View>
             </View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>A fazer</Text>
+              {pendentesHoje.length === 0 && (
+                <Text style={styles.sectionSmall}>Tudo certo por aqui</Text>
+              )}
+            </View>
 
-            {habitos.map((h) => {
+            {pendentesHoje.map((h) => {
               const checked = !!doneMap[h.id];
               const isSyncing = syncing === h.id;
-
               return (
                 <View key={h.id} style={styles.habitRow}>
                   <View style={{ flex: 1 }}>
@@ -293,8 +300,74 @@ export default function Home() {
               );
             })}
 
+            {concluidosHoje.length > 0 && (
+              <>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Concluídos hoje</Text>
+                  <TouchableOpacity
+                    onPress={() => setMostrarConcluidos((v) => !v)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.sectionToggle}>
+                      {mostrarConcluidos ? "Ocultar" : "Mostrar"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {mostrarConcluidos &&
+                  concluidosHoje.map((h) => {
+                    const checked = !!doneMap[h.id];
+                    const isSyncing = syncing === h.id;
+
+                    return (
+                      <View
+                        key={h.id}
+                        style={[styles.habitRow, styles.habitRowDone]}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[styles.habitName, styles.habitNameDone]}
+                          >
+                            {h.name}
+                          </Text>
+                          {!!h.description && (
+                            <Text
+                              style={[styles.habitMeta, styles.habitMetaDone]}
+                              numberOfLines={1}
+                            >
+                              {h.description}
+                            </Text>
+                          )}
+                        </View>
+
+                        <TouchableOpacity
+                          style={[
+                            styles.checkbox,
+                            checked && styles.checkboxChecked,
+                            isSyncing && { opacity: 0.6 },
+                          ]}
+                          onPress={() => toggleDone(h.id)}
+                          disabled={isSyncing}
+                          activeOpacity={0.85}
+                        >
+                          {checked ? (
+                            <Ionicons name="checkmark" size={18} color="#fff" />
+                          ) : (
+                            <Ionicons
+                              name="square-outline"
+                              size={18}
+                              color="#64748B"
+                            />
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+              </>
+            )}
+
             <TouchableOpacity
-              style={[styles.fab, { alignSelf: "flex-end" }]}
+              style={styles.fab}
               onPress={irCadastrarHabito}
               activeOpacity={0.85}
             >
