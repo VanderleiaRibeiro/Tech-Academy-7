@@ -24,6 +24,28 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Cores.claro.texto,
+  },
+  sectionSmall: {
+    fontSize: 12,
+    color: Cores.claro.textoSecundario,
+  },
+  sectionToggle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Cores.claro.tonalidade,
+  },
+
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -96,7 +118,6 @@ export const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // itens
   habitRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -124,6 +145,18 @@ export const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   checkboxChecked: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
+
+  habitRowDone: {
+    opacity: 0.9,
+    backgroundColor: "#F8FAFC",
+  },
+  habitNameDone: {
+    textDecorationLine: "line-through",
+    color: "#6B7280",
+  },
+  habitMetaDone: {
+    color: "#9CA3AF",
+  },
 
   fab: {
     width: 56,
