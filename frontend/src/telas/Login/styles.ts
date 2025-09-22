@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { Cores } from "../../constants/Colors"; // 👈 adicionado
+import { Cores } from "../../constants/Colors";
 
 export const styles = StyleSheet.create({
   container: {
@@ -8,7 +8,7 @@ export const styles = StyleSheet.create({
     alignItems: "stretch",
     paddingHorizontal: 30,
     paddingBottom: 24,
-    backgroundColor: Cores.claro.fundo, // 👈 agora usa fundo padrão cinza claro
+    backgroundColor: Cores.claro.fundo,
   },
 
   title: {
@@ -38,7 +38,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 12,
-    backgroundColor: "#fff", // 👈 inputs continuam brancos
+    backgroundColor: "#fff",
   },
 
   passwordContainer: {
@@ -50,7 +50,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 0,
-    backgroundColor: "#fff", // 👈 campo de senha também branco
+    backgroundColor: "#fff",
   },
 
   inputPassword: {

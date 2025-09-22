@@ -2,19 +2,17 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
-// telas
 import Home from "../telas/Home/Home";
 import Profile from "../telas/Profile/Profile";
 import HabitosStack from "@/navigation/HabitosStack";
 
-// Exporte os nomes das tabs para reusar nas navegações aninhadas (ex.: Home.tsx)
 export const TAB_HOME = "Home" as const;
 export const TAB_HABITOS = "Habitos" as const;
 export const TAB_PROFILE = "Profile" as const;
 
 export type MainTabParamList = {
   [TAB_HOME]: undefined;
-  [TAB_HABITOS]: undefined; // é um Stack por baixo
+  [TAB_HABITOS]: undefined;
   [TAB_PROFILE]: undefined;
 };
 
@@ -64,7 +62,7 @@ export default function MainTabs() {
       />
       <Tab.Screen
         name={TAB_HABITOS}
-        component={HabitosStack} // stack das telas de hábitos
+        component={HabitosStack}
         options={{ title: "Hábitos" }}
       />
       <Tab.Screen

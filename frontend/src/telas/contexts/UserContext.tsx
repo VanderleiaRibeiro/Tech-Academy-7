@@ -10,7 +10,7 @@ import api from "@/api/api";
 
 export interface User {
   id: number;
-  name: string | null; // backend pode vir null
+  name: string | null;
   email: string;
   url_img?: string | null;
   description?: string | null;
@@ -33,7 +33,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [booting, setBooting] = useState(true);
 
-  // Hidrata token + user ao abrir o app
   useEffect(() => {
     (async () => {
       try {

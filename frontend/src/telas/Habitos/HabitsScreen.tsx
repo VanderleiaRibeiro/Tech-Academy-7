@@ -1,4 +1,3 @@
-// src/telas/Habitos/HabitsScreen.tsx
 import React, { useCallback, useState } from "react";
 import {
   View,

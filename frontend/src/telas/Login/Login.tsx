@@ -16,9 +16,8 @@ import Cabecalho from "../../components/Cabecalho";
 import { useUser } from "../../telas/contexts/UserContext";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "@/api/api";
-import { Cores } from "../../constants/Colors"; // 👈 adicionado
+import { Cores } from "../../constants/Colors";
 
-// ===== Tipos =====
 type UserDTO = {
   id: number;
   name: string | null;
@@ -99,7 +98,6 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Cores.claro.fundo }}>
-      {/* Cabeçalho fixo no topo */}
       <Cabecalho titulo="RVM Routine" />
 
       <KeyboardAvoidingView
