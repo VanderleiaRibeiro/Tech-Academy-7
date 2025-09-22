@@ -17,7 +17,7 @@ class User extends Model {
 
   toJSON() {
     const values = { ...this.get() } as any;
-    delete values.password; // 👈 não expõe a senha
+    delete values.password;
     return values;
   }
 }
@@ -33,7 +33,6 @@ User.init(
     email: { type: DataTypes.STRING(200), allowNull: false, unique: true },
     password: { type: DataTypes.STRING(200), allowNull: false },
 
-    // 🔑 campos para recuperação de senha
     reset_token: { type: DataTypes.STRING, allowNull: true },
     reset_token_expires: { type: DataTypes.DATE, allowNull: true },
   },

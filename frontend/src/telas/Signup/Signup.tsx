@@ -14,7 +14,6 @@ import { signupStyles as styles } from "../Signup/styles";
 import api from "@/api/api";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-// tipagem das rotas
 export type RootStackParamList = {
   Signup: undefined;
   Login: undefined;
@@ -27,54 +26,58 @@ export default function SignupScreen({ navigation }: Props) {
   const [email, setEmail] = useState<string>("");
   const [senha, setSenha] = useState<string>("");
   const [confirmarSenha, setConfirmarSenha] = useState<string>("");
-  const [cpf, setCpf] = useState<string>(""); // não usado no back
+  const [cpf, setCpf] = useState<string>("");
   const [mostrarSenha, setMostrarSenha] = useState<boolean>(false);
-  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState<boolean>(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] =
+    useState<boolean>(false);
 
-const handleSignup = async () => {
-  try {
-    console.log("[SIGNUP] start");
+  const handleSignup = async () => {
+    try {
+      console.log("[SIGNUP] start");
 
-    if (!email || !senha) {
-      Alert.alert("Atenção", "Preencha e-mail e senha.");
-      return;
+      if (!email || !senha) {
+        Alert.alert("Atenção", "Preencha e-mail e senha.");
+        return;
+      }
+      if (senha !== confirmarSenha) {
+        Alert.alert("Atenção", "As senhas não coincidem.");
+        return;
+      }
+
+      const senhaOk =
+        senha.length >= 8 &&
+        /[A-Z]/.test(senha) &&
+        /\d/.test(senha) &&
+        /[@$!%*?&]/.test(senha);
+      if (!senhaOk) {
+        Alert.alert(
+          "Senha fraca",
+          "Use pelo menos 8 caracteres, 1 letra maiúscula, 1 número e 1 símbolo."
+        );
+        return;
+      }
+
+      const r = await api.post("/users/register", {
+        name: nome || null,
+        email: email.trim().toLowerCase(),
+        password: senha,
+      });
+
+      console.log("[SIGNUP OK]", r.status, r.data);
+      Alert.alert("Sucesso", "Cadastro realizado!", [
+        { text: "OK", onPress: () => navigation.navigate("Login") },
+      ]);
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const apiMsg = e?.response?.data?.message;
+      const msg =
+        apiMsg ??
+        (status === 409
+          ? "E-mail já cadastrado."
+          : e?.message ?? "Erro no cadastro. Tente novamente.");
+      Alert.alert("Erro", msg);
     }
-    if (senha !== confirmarSenha) {
-      Alert.alert("Atenção", "As senhas não coincidem.");
-      return;
-    }
-
-    // (opcional) força de senha
-    const senhaOk =
-      senha.length >= 8 && /[A-Z]/.test(senha) && /\d/.test(senha) && /[@$!%*?&]/.test(senha);
-    if (!senhaOk) {
-      Alert.alert(
-        "Senha fraca",
-        "Use pelo menos 8 caracteres, 1 letra maiúscula, 1 número e 1 símbolo."
-      );
-      return;
-    }
-
-    const r = await api.post("/users/register", {
-  name: nome || null,
-  email: email.trim().toLowerCase(),
-  password: senha, // <-- TEM que existir
-      // não enviar cpf (o back não usa)
-    });
-
-    console.log("[SIGNUP OK]", r.status, r.data);
-    Alert.alert("Sucesso", "Cadastro realizado!", [
-      { text: "OK", onPress: () => navigation.navigate("Login") },
-    ]);
-  } catch (e: any) {
-    const status = e?.response?.status;
-const apiMsg = e?.response?.data?.message;
-const msg =
-  apiMsg ??
-  (status === 409 ? "E-mail já cadastrado." : e?.message ?? "Erro no cadastro. Tente novamente.");
-Alert.alert("Erro", msg);
-  }
-};
+  };
 
   return (
     <KeyboardAvoidingView

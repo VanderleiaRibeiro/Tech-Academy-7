@@ -116,10 +116,8 @@ export default function EditProfileScreen({ navigation }: Props) {
           ]}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header padronizado: seta + título */}
           <Cabecalho titulo="Editar Perfil" mostrarVoltar onVoltar={goBack} />
 
-          {/* Subtítulo discreto */}
           <Text
             style={{
               marginTop: 4,
@@ -131,7 +129,6 @@ export default function EditProfileScreen({ navigation }: Props) {
             Atualize seu nome. O e-mail não pode ser alterado.
           </Text>
 
-          {/* Nome */}
           <View style={styles.inputWrapper}>
             <Text style={styles.label}>Nome completo</Text>
             <TextInput
@@ -142,7 +139,6 @@ export default function EditProfileScreen({ navigation }: Props) {
             />
           </View>
 
-          {/* E-mail (somente leitura) */}
           <View style={styles.inputWrapper}>
             <Text style={styles.label}>E-mail</Text>
             <TextInput
@@ -155,7 +151,6 @@ export default function EditProfileScreen({ navigation }: Props) {
             />
           </View>
 
-          {/* Botões */}
           <TouchableOpacity
             style={[styles.button, (salvando || excluindo) && { opacity: 0.7 }]}
             onPress={handleUpdate}

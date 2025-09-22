@@ -3,11 +3,7 @@ import { z, ZodError } from "zod";
 import UserModel from "../models/UserModel";
 import { generateToken } from "../utils/jwt";
 
-/* =========================
- * Schemas (Zod)
- * ========================= */
 const createUserSchema = z.object({
-  // pode ser string válida OU null/undefined (model permite null)
   name: z.string().trim().min(1, "Nome é obrigatório").nullable().optional(),
   email: z.string().trim().toLowerCase().email("E-mail inválido"),
   password: z
@@ -63,9 +59,6 @@ const loginSchema = z.object({
   password: z.string().min(1, "Senha é obrigatória"),
 });
 
-/* =========================
- * Helpers
- * ========================= */
 function sendZod(res: Response, err: ZodError) {
   return res.status(400).json({
     message: err.issues?.[0]?.message ?? "Dados inválidos",
@@ -73,9 +66,6 @@ function sendZod(res: Response, err: ZodError) {
   });
 }
 
-/* =========================
- * Controllers
- * ========================= */
 export const getAllUsers = async (
   _req: Request,
   res: Response,
@@ -83,7 +73,7 @@ export const getAllUsers = async (
 ) => {
   try {
     const users = await UserModel.findAll();
-    return res.status(200).json(users); // toJSON do model já remove password
+    return res.status(200).json(users);
   } catch (error) {
     next(error);
   }
@@ -115,11 +105,10 @@ export const createUser = async (
   try {
     const raw = req.body ?? {};
 
-    // normaliza campos pt/en
     const normalized = {
       name: raw.name ?? raw.nome ?? null,
       email: raw.email,
-      password: raw.password ?? raw.senha, // aceita 'senha'
+      password: raw.password ?? raw.senha,
       url_img: raw.url_img ?? raw.foto ?? null,
       description: raw.description ?? raw.descricao ?? null,
     };
@@ -147,7 +136,7 @@ export const loginUser = async (
     const raw = req.body ?? {};
     const payload = loginSchema.parse({
       email: raw.email,
-      password: raw.password ?? raw.senha, // aceita 'senha' aqui também
+      password: raw.password ?? raw.senha,
     });
 
     const user = await UserModel.findOne({

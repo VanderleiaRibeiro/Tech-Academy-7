@@ -1,4 +1,3 @@
-// src/telas/Profile/Profile.tsx
 import React, { useCallback } from "react";
 import {
   View,
@@ -57,7 +56,6 @@ const Profile: React.FC = () => {
         text: "Sair",
         style: "destructive",
         onPress: () => {
-          // Simples e robusto: App.tsx já alterna entre stacks com base em `user`
           logout();
         },
       },
@@ -79,13 +77,28 @@ const Profile: React.FC = () => {
           <View style={styles.centerBox}>
             <View style={styles.avatar} />
             <Text style={styles.name}>{user?.name ?? "Usuário"}</Text>
-            <Text style={styles.email}>{user?.email ?? "email@exemplo.com"}</Text>
+            <Text style={styles.email}>
+              {user?.email ?? "email@exemplo.com"}
+            </Text>
           </View>
 
           <View style={styles.list}>
-            <Row icon="create-outline" label="Editar Perfil" onPress={editarPerfil} />
-            <Row icon="key-outline" label="Alterar Senha" onPress={alterarSenha} />
-            <Row icon="log-out-outline" label="Sair da Conta" danger onPress={sair} />
+            <Row
+              icon="create-outline"
+              label="Editar Perfil"
+              onPress={editarPerfil}
+            />
+            <Row
+              icon="key-outline"
+              label="Alterar Senha"
+              onPress={alterarSenha}
+            />
+            <Row
+              icon="log-out-outline"
+              label="Sair da Conta"
+              danger
+              onPress={sair}
+            />
           </View>
 
           <View style={{ height: 24 }} />

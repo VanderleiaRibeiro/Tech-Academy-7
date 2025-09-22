@@ -47,7 +47,6 @@ const Cabecalho: React.FC<Props> = ({
           containerStyle,
         ]}
       >
-        {/* esquerda */}
         {mostrarVoltar ? (
           <TouchableOpacity
             onPress={onVoltar}
@@ -60,7 +59,6 @@ const Cabecalho: React.FC<Props> = ({
           <View style={styles.sideBtn} />
         )}
 
-        {/* centro absoluto (garante que nunca “some”) */}
         <View pointerEvents="none" style={styles.centerAbsolute}>
           {titulo ? (
             <Text style={[styles.title, titleStyle]}>{titulo}</Text>
@@ -68,7 +66,6 @@ const Cabecalho: React.FC<Props> = ({
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
 
-        {/* direita */}
         {rightIcon ? (
           <TouchableOpacity
             onPress={onRightPress}
@@ -100,8 +97,8 @@ const styles = StyleSheet.create({
   },
   centerAbsolute: {
     position: "absolute",
-    left: 56, // dá espaço pra seta
-    right: 56, // dá espaço pra ação da direita
+    left: 56,
+    right: 56,
     top: 0,
     bottom: 10,
     alignItems: "center",

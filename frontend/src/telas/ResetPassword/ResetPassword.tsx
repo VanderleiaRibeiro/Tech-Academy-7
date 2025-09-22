@@ -1,4 +1,3 @@
-// src/telas/ResetPassword/ResetPassword.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -40,7 +39,6 @@ export default function ResetPasswordScreen() {
   const [confirm, setConfirm] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
-  // visibilidade dos campos de senha
   const [showCurrent, setShowCurrent] = useState<boolean>(false);
   const [showNew, setShowNew] = useState<boolean>(false);
   const [showConfirm, setShowConfirm] = useState<boolean>(false);

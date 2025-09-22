@@ -1,4 +1,3 @@
-// src/telas/ForgotPassword/ForgotPassword.tsx
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -22,10 +21,8 @@ export default function ForgotPasswordScreen() {
       });
 
       if (data?.devToken) {
-        // DEV: já abre a tela de redefinição com o token preenchido
         navigation.navigate("ResetPassword", { token: data.devToken });
       } else {
-        // PRODUÇÃO: instruir usuário a checar o e-mail
         Alert.alert(
           "Pronto",
           "Se o e-mail existir, você receberá instruções para redefinir sua senha."
