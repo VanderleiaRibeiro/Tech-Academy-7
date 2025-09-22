@@ -1,50 +1,162 @@
-# Welcome to your Expo app 👋
+# RVM Routine — Controle de Hábitos
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Sobre o Projeto
 
-## Get started
+O **RVM Routine** é um aplicativo mobile desenvolvido em **React Native (Expo)** com backend em **Node.js/Express** e **MySQL**.  
+O objetivo do sistema é ajudar usuários a **criarem, acompanharem e concluírem hábitos** do dia a dia, com registro diário, categorias e em breve notificações.
 
-1. Install dependencies
+Projeto desenvolvido como parte da disciplina **Tech Academy 7**, com foco em **Clean Code, POO e boas práticas**.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## Tecnologias Utilizadas
 
-   ```bash
-   npx expo start
-   ```
+### **Frontend (Mobile)**
 
-In the output, you'll find options to open the app in a
+- [React Native (Expo)](https://expo.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [React Navigation](https://reactnavigation.org/)
+- [Axios](https://axios-http.com/)
+- [React Hook Form](https://react-hook-form.com/)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### **Backend**
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- [Node.js](https://nodejs.org/)
+- [Express](https://expressjs.com/)
+- [Sequelize ORM](https://sequelize.org/)
+- [MySQL](https://www.mysql.com/)
+- [JWT (JSON Web Token)](https://jwt.io/)
+- [Zod](https://zod.dev/)
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## Funcionalidades
 
-```bash
-npm run reset-project
+- Cadastro e login de usuários
+- Autenticação com JWT
+- Edição de usuário (restrita ao próprio usuário)
+- CRUD completo de hábitos
+- Marcar e desmarcar hábitos como concluídos (com registros diários)
+- Agrupamento entre "A Fazer" e "Concluídos Hoje"
+- Organização de código com **Clean Code e POO**
+
+---
+
+## Estrutura de Pastas
+
+### **Backend**
+
+```md
+backend/
+├── src/
+│ ├── config/
+│ ├── controllers/
+│ ├── middleware/
+│ ├── models/
+│ ├── routes/
+│ ├── utils/
+│ ├── app.ts
+│ └── index.ts
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### **Frontend**
 
-## Learn more
+```md
+frontend/
+├── src/
+│ ├── telas/
+│ ├── components/
+│ ├── api/
+│ ├── navigation/
+│ └── services/
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Variáveis de Ambiente
 
-## Join the community
+### **Backend (.env)**
 
-Join our community of developers creating universal apps.
+```env
+NODE_ENV=development
+PORT=3001
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+DB_OFICIAL=controle_habitos
+DB_USER=root
+DB_PASSWORD=
+DB_HOST=127.0.0.1
+DB_PORT=3306
+
+FRONT_URL=http://localhost:5173
+JWT_SECRET=umsegredoseguro
+JWT_EXPIRES=1d
+```
+
+### **Frontend (.env)**
+
+```env
+EXPO_PUBLIC_API_URL=http://localhost:3001
+```
+
+---
+
+## Como Rodar o Projeto
+
+### Backend
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+Servidor disponível em: http://localhost:3001
+
+### Frontend (Expo)
+
+```bash
+cd frontend
+npm install
+npx expo start
+```
+
+Rodar no celular com Expo Go (QR Code)
+
+---
+
+## Rotas da API
+
+### Usuários
+
+- POST /api/users/register → Criar usuário
+- POST /api/users/login → Login
+- GET /api/users/:id → Buscar usuário
+- PUT /api/users/:id → Atualizar usuário (autenticado)
+- DELETE /api/users/:id → Deletar conta
+
+### Hábitos
+
+- POST /api/habits → Criar hábito
+- GET /api/habits → Listar hábitos do usuário
+- PUT /api/habits/:id → Atualizar hábito
+- DELETE /api/habits/:id → Deletar hábito
+
+### Registros de Hábitos
+
+- POST /api/habits/:habitId/records → Criar/atualizar registro diário
+- GET /api/habits/:habitId/records?date=YYYY-MM-DD → Listar registros
+- DELETE /api/habits/:habitId/records?date=YYYY-MM-DD → Remover registro
+
+---
+
+## Autores
+
+- Rodrigo Oliveira
+- Mariana Salmaza
+- Vanderléia Ribeiro
+
+---
+
+## Licença
+
+Projeto desenvolvido para fins acadêmicos na Tech Academy 7.
