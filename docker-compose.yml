@@ -11,6 +11,8 @@ services:
       - auth-db
     networks:
       - backend
+    volumes:
+      - ./auth/dist/uploads:/app/dist/uploads
 
   auth-db:
     image: postgres:15

@@ -22,6 +22,7 @@ type UserDTO = {
   id: number;
   name: string | null;
   email: string;
+  url_img?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -58,7 +59,7 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       setLoading(true);
 
-      const { data } = await api.post<AuthResponse>("/users/login", {
+      const { data } = await api.post<AuthResponse>("/auth/login", {
         email: email.trim().toLowerCase(),
         password,
       });
@@ -66,8 +67,25 @@ export default function LoginScreen({ navigation }: Props) {
       const { token, user } = data;
       if (!token) throw new Error("Token ausente na resposta.");
 
-      await login(user, token);
-      Alert.alert("Sucesso", `Bem-vindo, ${user?.name ?? user?.email}!`);
+      const baseUrl =
+        (api.defaults.baseURL as string | undefined) ??
+        process.env.EXPO_PUBLIC_API_URL ??
+        "";
+
+      const finalUser: UserDTO = {
+        ...user,
+        url_img:
+          user.url_img && baseUrl
+            ? `${baseUrl}${user.url_img}`
+            : user.url_img ?? null,
+      };
+
+      await login(finalUser, token);
+
+      Alert.alert(
+        "Sucesso",
+        `Bem-vindo, ${finalUser?.name ?? finalUser?.email}!`
+      );
     } catch (e: any) {
       const status = e?.response?.status;
       const messageFromApi =

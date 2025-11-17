@@ -1,7 +1,11 @@
 {
   "dependencies": {
+    "@react-native-picker/picker": "^2.11.1",
     "dotenv": "^17.2.1",
-    "zod": "^4.1.5",
-    "@react-native-picker/picker": "^2.11.1"
+    "multer": "^2.0.2",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@types/multer": "^2.0.0"
   }
 }

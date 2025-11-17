@@ -21,12 +21,13 @@ type RootStackParamList = {
   EditProfile: undefined;
   Login: undefined;
   MainTabs: undefined;
+  UploadFoto: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditProfile">;
 
 export default function EditProfileScreen({ navigation }: Props) {
-  const { user, setUser, logout } = useUser();
+  const { user, updateUser, logout } = useUser();
 
   const [nome, setNome] = useState<string>(user?.name ?? "");
   const [email] = useState<string>(user?.email ?? "");
@@ -41,6 +42,7 @@ export default function EditProfileScreen({ navigation }: Props) {
         Alert.alert("Sessão expirada", "Faça login novamente.");
         return;
       }
+
       const trimmed = nome.trim();
       if (!trimmed) {
         Alert.alert("Atenção", "O nome não pode estar vazio.");
@@ -48,11 +50,33 @@ export default function EditProfileScreen({ navigation }: Props) {
       }
 
       setSalvando(true);
-      const { data: updated } = await api.put<User>(`/users/${user.id}`, {
+
+      const { data: updated } = await api.put<User>(`/auth/users/${user.id}`, {
         name: trimmed,
       });
 
-      setUser(updated ?? { ...user, name: trimmed });
+      const baseUrl =
+        (api.defaults.baseURL as string | undefined) ??
+        process.env.EXPO_PUBLIC_API_URL ??
+        "";
+
+      const rawUrlImg = updated?.url_img ?? user.url_img ?? null;
+
+      const finalUrlImg =
+        rawUrlImg && baseUrl
+          ? rawUrlImg.startsWith("http")
+            ? rawUrlImg
+            : `${baseUrl}${rawUrlImg}`
+          : rawUrlImg;
+
+      const novoUser: User = {
+        ...user,
+        ...updated,
+        name: trimmed,
+        url_img: finalUrlImg,
+      };
+
+      await updateUser(novoUser);
 
       Alert.alert("Sucesso", "Perfil atualizado!", [
         { text: "OK", onPress: goBack },
@@ -68,7 +92,7 @@ export default function EditProfileScreen({ navigation }: Props) {
     } finally {
       setSalvando(false);
     }
-  }, [user, nome, setUser, goBack]);
+  }, [user, nome, updateUser, goBack]);
 
   const handleDelete = useCallback(() => {
     if (!user?.id) {
@@ -86,7 +110,7 @@ export default function EditProfileScreen({ navigation }: Props) {
           onPress: async () => {
             try {
               setExcluindo(true);
-              await api.delete(`/users/${user.id}`);
+              await api.delete(`/auth/users/${user.id}`);
               await logout();
             } catch (e: any) {
               const msg =

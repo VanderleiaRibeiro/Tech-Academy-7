@@ -1,87 +1,194 @@
-import express, { Request, Response } from "express";
-import { Pool } from "pg";
-import bcrypt from "bcryptjs";
-import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import express, { RequestHandler } from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+
+import { ensureSchema, db } from "./db/pool.js";
+import { authRouter } from "./routes/auth.routes.js";
+import {
+  authMiddleware,
+  adminOnly,
+  AuthRequest,
+} from "./middleware/authMiddleware.js";
 
 const app = express();
 app.use(express.json());
 
-app.get("/auth/health", (_req: Request, res: Response) => {
-  return res.json({ ok: true, service: "auth" });
-});
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const db = new Pool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  port: Number(process.env.DB_PORT || 5432),
-});
-
-app.get("/health", (_req, res) => res.json({ ok: true, service: "auth" }));
-
-async function ensureSchema() {
-  await db.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL
-    );
-  `);
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-app.post("/auth/register", async (req: Request, res: Response) => {
-  const { name, email, password } = req.body ?? {};
-  if (!name || !email || !password)
-    return res.status(400).json({ error: "invalid_payload" });
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `image-${uniqueSuffix}${ext}`);
+  },
+});
 
-  const hash = await bcrypt.hash(password, 10);
-  try {
-    const r = await db.query<{ id: number }>(
-      "INSERT INTO users(name,email,password_hash) VALUES($1,$2,$3) RETURNING id",
-      [name, email, hash]
+const fileFilter = (_req: any, file: any, cb: any) => {
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+  ];
+
+  const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+  const fileExtension = String(path.extname(file.originalname)).toLowerCase();
+
+  if (
+    allowedMimeTypes.includes(file.mimetype) &&
+    allowedExtensions.includes(fileExtension)
+  ) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        `Tipo de arquivo não permitido. Apenas imagens são aceitas (JPEG, PNG, GIF, WebP). Tipo enviado: ${file.mimetype}`
+      ),
+      false
     );
-    return res.status(201).json({ id: r.rows[0].id });
-  } catch (e: any) {
-    if (String(e?.message ?? "").includes("duplicate"))
-      return res.status(409).json({ error: "email_exists" });
-    return res.status(500).json({ error: "internal_error" });
   }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    files: 1,
+  },
 });
 
-app.post("/auth/login", async (req: Request, res: Response) => {
-  const { email, password } = req.body ?? {};
-  if (!email || !password)
-    return res.status(400).json({ error: "invalid_payload" });
+app.use("/auth", authRouter);
 
-  const r = await db.query<{ id: number; password_hash: string }>(
-    "SELECT id, password_hash FROM users WHERE email=$1",
-    [email]
-  );
-  if (!r.rows.length)
-    return res.status(401).json({ error: "invalid_credentials" });
-
-  const ok = await bcrypt.compare(password, r.rows[0].password_hash);
-  if (!ok) return res.status(401).json({ error: "invalid_credentials" });
-
-  const payload = { sub: r.rows[0].id, email };
-  const secret: Secret = process.env.JWT_SECRET || "dev-secret";
-
-  type Expires = NonNullable<SignOptions["expiresIn"]>;
-  let expiresIn: Expires = 900;
-
-  const envExp = process.env.JWT_EXPIRES;
-  if (envExp) {
-    const asNumber = Number(envExp);
-    expiresIn = Number.isFinite(asNumber) ? asNumber : (envExp as Expires);
-  }
-
-  const options: SignOptions = { expiresIn };
-
-  const token = jwt.sign(payload, secret, options);
-  return res.json({ token });
+app.get("/health", (_req, res) => {
+  return res.json({ ok: true, service: "auth-root" });
 });
-ensureSchema().then(() =>
-  app.listen(3000, () => console.log("auth up on 3000"))
+
+const adminOnlyHandler: RequestHandler = (req, res) => {
+  const authReq = req as AuthRequest;
+
+  return res.json({
+    message: "Área exclusiva de administradores",
+    user: authReq.user,
+  });
+};
+
+app.get("/auth/admin-only", authMiddleware, adminOnly, adminOnlyHandler);
+
+app.post(
+  "/auth/upload",
+  authMiddleware,
+  (req, res, next) => {
+    const uploadSingle = upload.single("image");
+
+    uploadSingle(req as any, res as any, (err: any) => {
+      if (err instanceof multer.MulterError) {
+        let errorMessage = "";
+
+        switch (err.code) {
+          case "LIMIT_FILE_SIZE":
+            errorMessage =
+              "Arquivo muito grande. Tamanho máximo permitido: 5MB";
+            break;
+          case "LIMIT_FILE_COUNT":
+            errorMessage = "Muitos arquivos. Envie apenas uma imagem por vez";
+            break;
+          case "LIMIT_UNEXPECTED_FILE":
+            errorMessage = 'Campo de arquivo inesperado. Use o campo "image"';
+            break;
+          default:
+            errorMessage = `Erro no upload: ${err.message}`;
+        }
+
+        return res.status(400).json({
+          success: false,
+          error: errorMessage,
+        });
+      } else if (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+
+      return next();
+    });
+  },
+  async (req, res) => {
+    const authReq = req as AuthRequest & { file?: Express.Multer.File };
+
+    if (!authReq.file) {
+      return res.status(400).json({
+        success: false,
+        error: "Nenhuma imagem foi enviada",
+      });
+    }
+
+    if (!authReq.user?.id) {
+      return res.status(401).json({
+        success: false,
+        error: "Usuário não autenticado",
+      });
+    }
+
+    const fileInfo = {
+      originalName: authReq.file.originalname,
+      filename: authReq.file.filename,
+      mimetype: authReq.file.mimetype,
+      size: authReq.file.size,
+      path: authReq.file.path,
+      url: `/auth/uploads/${authReq.file.filename}`,
+      userId: authReq.user.id,
+    };
+
+    console.log("Upload realizado com sucesso:", fileInfo);
+
+    try {
+      await db.query(
+        `
+          UPDATE users
+          SET url_img = $1, updated_at = NOW()
+          WHERE id = $2
+        `,
+        [fileInfo.url, authReq.user.id]
+      );
+    } catch (error) {
+      console.error("Erro ao salvar url_img no banco:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Imagem enviada, mas ocorreu um erro ao salvar no perfil.",
+        file: fileInfo,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Imagem enviada com sucesso!",
+      file: fileInfo,
+    });
+  }
 );
+
+app.use("/auth/uploads", express.static(uploadsDir));
+ensureSchema()
+  .then(() => {
+    app.listen(3000, () => {
+      console.log("auth up on 3000");
+    });
+  })
+  .catch((err) => {
+    console.error("Erro ao garantir schema do banco:", err);
+    process.exit(1);
+  });

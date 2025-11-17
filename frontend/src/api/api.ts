@@ -9,20 +9,25 @@ function guessLanBase(): string {
     (Constants.manifest as any)?.debuggerHost ||
     "";
   const host = hostUri.split(":")[0];
-  return host ? `http://${host}:3001` : "";
+
+  return host ? `http://${host}:8081` : "";
 }
 
 function getBaseUrl(): string {
   const fromEnv =
     process.env.EXPO_PUBLIC_API_URL ||
     (Constants.expoConfig?.extra as any)?.API_URL;
-  if (fromEnv) return `${fromEnv}/api`;
+
+  if (fromEnv) return fromEnv;
 
   const fromMetro = guessLanBase();
-  if (fromMetro) return `${fromMetro}/api`;
+  if (fromMetro) return fromMetro;
 
-  if (Platform.OS === "android") return "http://10.0.2.2:3001/api";
-  return "http://localhost:3001/api";
+  if (Platform.OS === "android") {
+    return "http://10.0.2.2:8081";
+  }
+
+  return "http://localhost:8081";
 }
 
 const api = axios.create({ baseURL: getBaseUrl(), timeout: 10000 });

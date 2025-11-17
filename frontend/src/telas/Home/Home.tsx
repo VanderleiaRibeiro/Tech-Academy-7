@@ -104,9 +104,16 @@ export default function Home() {
   const saudacao = `Olá${displayName ? `, ${displayName}` : ""}`;
 
   const carregarHabitos = useCallback(async (): Promise<HabitDTO[]> => {
+    if (!user) {
+      setHabitos([]);
+      return [];
+    }
+
     try {
       setLoading(true);
-      const { data } = await api.get<HabitDTO[]>("/habits");
+      const { data } = await api.get<HabitDTO[]>("/habits", {
+        params: { userId: user.id },
+      });
       setHabitos(data);
       return data;
     } catch (e) {
@@ -116,7 +123,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const carregarConcluidosHoje = useCallback(
     async (lista: HabitDTO[]): Promise<void> => {

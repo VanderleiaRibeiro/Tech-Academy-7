@@ -7,6 +7,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -49,6 +50,10 @@ const Profile: React.FC = () => {
     navigation.navigate("ResetPassword", { mode: "loggedIn" });
   }, [navigation]);
 
+  const abrirUploadFoto = useCallback(() => {
+    navigation.navigate("UploadFoto");
+  }, [navigation]);
+
   const sair = useCallback(() => {
     Alert.alert("Sair", "Deseja realmente sair da conta?", [
       { text: "Cancelar", style: "cancel" },
@@ -75,7 +80,12 @@ const Profile: React.FC = () => {
           <Cabecalho titulo="Perfil" />
 
           <View style={styles.centerBox}>
-            <View style={styles.avatar} />
+            {user?.url_img ? (
+              <Image source={{ uri: user.url_img }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatar} />
+            )}
+
             <Text style={styles.name}>{user?.name ?? "Usuário"}</Text>
             <Text style={styles.email}>
               {user?.email ?? "email@exemplo.com"}
@@ -87,6 +97,11 @@ const Profile: React.FC = () => {
               icon="create-outline"
               label="Editar Perfil"
               onPress={editarPerfil}
+            />
+            <Row
+              icon="image-outline"
+              label="Alterar foto de perfil"
+              onPress={abrirUploadFoto}
             />
             <Row
               icon="key-outline"

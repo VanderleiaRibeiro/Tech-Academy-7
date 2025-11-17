@@ -16,6 +16,7 @@ import Cabecalho from "../../components/Cabecalho";
 import api from "@/api/api";
 import { TAB_HABITOS } from "@/navigation/MainTabs";
 import type { HabitosStackParamList } from "@/navigation/HabitosStack";
+import { useUser } from "@/telas/contexts/UserContext";
 
 type Props = NativeStackScreenProps<HabitosStackParamList, "CadastrarHabito">;
 
@@ -25,6 +26,8 @@ const AddHabitScreen: React.FC<Props> = ({ navigation }) => {
   const [frequencia, setFrequencia] = useState<string>("Diário");
   const [horarios, setHorarios] = useState<string[]>(["08:00"]);
   const [notificacoes, setNotificacoes] = useState<boolean>(true);
+
+  const { user } = useUser();
 
   const categorias = [
     "Saúde",
@@ -55,13 +58,22 @@ const AddHabitScreen: React.FC<Props> = ({ navigation }) => {
         return;
       }
 
+      if (!user) {
+        Alert.alert("Erro", "Usuário não autenticado.");
+        return;
+      }
+
       const description =
         `Categoria: ${categoria} | Frequência: ${frequencia} | ` +
         `Horários: ${horarios.join(", ")} | Notificações: ${
           notificacoes ? "on" : "off"
         }`;
 
-      await api.post("/habits", { name: nome.trim(), description });
+      await api.post("/habits", {
+        userId: user.id,
+        name: nome.trim(),
+        description,
+      });
 
       Alert.alert("Sucesso", "Hábito criado com sucesso!", [
         {

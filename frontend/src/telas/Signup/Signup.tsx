@@ -57,7 +57,7 @@ export default function SignupScreen({ navigation }: Props) {
         return;
       }
 
-      const r = await api.post("/users/register", {
+      const r = await api.post("/auth/register", {
         name: nome || null,
         email: email.trim().toLowerCase(),
         password: senha,
