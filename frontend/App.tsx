@@ -9,6 +9,7 @@ import EditProfile from "./src/telas/EditProfile/EditProfile";
 import MainTabs from "./src/navigation/MainTabs";
 import ForgotPassword from "./src/telas/ForgotPassword/ForgotPassword";
 import ResetPassword from "./src/telas/ResetPassword/ResetPassword";
+import UploadFotoScreen from "./src/telas/Profile/UploadFotoScreen";
 
 import { UserProvider, useUser } from "./src/telas/contexts/UserContext";
 
@@ -19,6 +20,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   ForgotPassword: undefined;
   ResetPassword: { token?: string; mode?: "reset" | "loggedIn" } | undefined;
+  UploadFoto: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -44,6 +46,11 @@ function RootNavigator() {
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="EditProfile" component={EditProfile} />
           <Stack.Screen name="ResetPassword" component={ResetPassword} />
+          <Stack.Screen
+            name="UploadFoto"
+            component={UploadFotoScreen}
+            options={{ headerShown: false }}
+          />
         </>
       ) : (
         <>

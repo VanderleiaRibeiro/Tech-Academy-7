@@ -24,6 +24,7 @@ type Ctx = {
   login: (u: User, token: string) => Promise<void>;
   logout: (navigation?: any) => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  updateUser: (u: User | null) => Promise<void>; // 👈 NOVO
 };
 
 const UserContext = createContext<Ctx | undefined>(undefined);
@@ -40,14 +41,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem("@token"),
           AsyncStorage.getItem("@user"),
         ]);
-        if (token)
+        if (token) {
           api.defaults.headers.common.Authorization = `Bearer ${token}`;
-        if (rawUser) setUser(JSON.parse(rawUser));
+        }
+        if (rawUser) {
+          setUser(JSON.parse(rawUser));
+        }
       } finally {
         setBooting(false);
       }
     })();
   }, []);
+
+  const updateUser = async (u: User | null) => {
+    if (u) {
+      await AsyncStorage.setItem("@user", JSON.stringify(u));
+      setUser(u);
+    } else {
+      await AsyncStorage.removeItem("@user");
+      setUser(null);
+    }
+  };
 
   const login = async (u: User, token: string) => {
     await AsyncStorage.setItem("@token", token);
@@ -56,7 +70,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUser(u);
   };
 
-  const logout = async (navigation?: any) => {
+  const logout = async (_navigation?: any) => {
     await AsyncStorage.removeItem("@token");
     await AsyncStorage.removeItem("@user");
     delete api.defaults.headers.common.Authorization;
@@ -64,7 +78,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ user, booting, login, logout, setUser }}>
+    <UserContext.Provider
+      value={{ user, booting, login, logout, setUser, updateUser }}
+    >
       {children}
     </UserContext.Provider>
   );

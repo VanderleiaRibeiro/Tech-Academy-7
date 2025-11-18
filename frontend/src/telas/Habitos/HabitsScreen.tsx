@@ -14,6 +14,7 @@ import Cabecalho from "../../components/Cabecalho";
 import api from "@/api/api";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useUser } from "@/telas/contexts/UserContext";
 
 type HabitDTO = {
   id: number;
@@ -36,10 +37,19 @@ const HabitsScreen: React.FC = () => {
   const [habitos, setHabitos] = useState<HabitDTO[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const { user } = useUser();
+
   const carregar = useCallback(async () => {
     try {
+      if (!user) {
+        setHabitos([]);
+        return;
+      }
+
       setLoading(true);
-      const { data } = await api.get<HabitDTO[]>("/habits");
+      const { data } = await api.get<HabitDTO[]>("/habits", {
+        params: { userId: user.id },
+      });
       setHabitos(data);
     } catch (e: any) {
       console.log("[HABITOS LIST ERR]", e?.response?.data || e?.message);
@@ -47,7 +57,7 @@ const HabitsScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
