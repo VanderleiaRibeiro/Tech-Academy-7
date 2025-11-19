@@ -1,4 +1,3 @@
-// habits/src/routes/habits.routes.ts
 import { Router } from "express";
 import Redis from "ioredis";
 
@@ -14,13 +13,12 @@ const redis = new Redis(
     }`
 );
 
-const TTL = 120; // 2 minutos
+const TTL = 120;
 
 function cacheKey(userId: number) {
   return `habits:${userId}`;
 }
 
-// -------------------- LISTAR --------------------
 habitsRouter.get("/", authMiddleware, async (req: AuthRequest, res) => {
   const userId = req.user!.id;
   const key = cacheKey(userId);
@@ -53,7 +51,6 @@ habitsRouter.get("/", authMiddleware, async (req: AuthRequest, res) => {
   return res.json(result.rows);
 });
 
-// -------------------- CRIAR --------------------
 habitsRouter.post("/", authMiddleware, async (req: AuthRequest, res) => {
   const userId = req.user!.id;
   const { name, description } = req.body ?? {};
@@ -77,7 +74,6 @@ habitsRouter.post("/", authMiddleware, async (req: AuthRequest, res) => {
   return res.status(201).json(r.rows[0]);
 });
 
-// -------------------- ATUALIZAR --------------------
 habitsRouter.put("/:id", authMiddleware, async (req: AuthRequest, res) => {
   const userId = req.user!.id;
   const id = Number(req.params.id);
@@ -113,7 +109,6 @@ habitsRouter.put("/:id", authMiddleware, async (req: AuthRequest, res) => {
   return res.json(r.rows[0]);
 });
 
-// -------------------- DELETAR --------------------
 habitsRouter.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
   const userId = req.user!.id;
   const id = Number(req.params.id);
