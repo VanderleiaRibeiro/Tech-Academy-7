@@ -9,7 +9,6 @@ export const db = new Pool({
 });
 
 export async function ensureSchema() {
-  // cria tabela básica se ainda não existir
   await db.query(`
     CREATE TABLE IF NOT EXISTS habits (
       id SERIAL PRIMARY KEY,
@@ -18,7 +17,6 @@ export async function ensureSchema() {
     );
   `);
 
-  // garante as colunas novas mesmo se a tabela já existia
   await db.query(`
     ALTER TABLE habits
     ADD COLUMN IF NOT EXISTS description TEXT;

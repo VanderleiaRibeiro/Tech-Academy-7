@@ -1,4 +1,3 @@
-// habits/src/index.ts
 import express from "express";
 import { ensureSchema } from "./db/pool.js";
 import { habitsRouter } from "./routes/habits.routes.js";
@@ -6,12 +5,10 @@ import { habitsRouter } from "./routes/habits.routes.js";
 const app = express();
 app.use(express.json());
 
-// health check
 app.get("/habits/health", (req, res) => {
   return res.json({ ok: true, service: "habits" });
 });
 
-// rotas protegidas
 app.use("/habits", habitsRouter);
 
 ensureSchema().then(() => {

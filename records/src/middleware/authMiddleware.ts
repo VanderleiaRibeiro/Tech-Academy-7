@@ -24,13 +24,13 @@ export function authMiddleware(
   res: Response,
   next: NextFunction
 ) {
-  const header = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
-  if (!header?.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     return res.status(401).json({ error: "missing_token" });
   }
 
-  const token = header.replace("Bearer ", "").trim();
+  const token = authHeader.slice("Bearer ".length).trim();
   const secret: Secret = process.env.JWT_SECRET || "dev-secret";
 
   try {
@@ -43,7 +43,7 @@ export function authMiddleware(
     };
 
     return next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ error: "invalid_token" });
   }
 }
