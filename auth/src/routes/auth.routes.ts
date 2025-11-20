@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import jwt, { Secret, JwtPayload } from "jsonwebtoken";
 import { db, type UserRole } from "../db/pool.js";
 import {
   authMiddleware,
@@ -15,35 +15,81 @@ authRouter.get("/health", (_req: Request, res: Response) => {
 });
 
 authRouter.post("/register", async (req: Request, res: Response) => {
-  const { name, email, password } = req.body ?? {};
-
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: "invalid_payload" });
-  }
-
-  const hash = await bcrypt.hash(password, 10);
-  const role: UserRole = "user";
-
   try {
-    const r = await db.query<{ id: number }>(
-      "INSERT INTO users(name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id",
-      [name, email, hash, role]
-    );
+    const { name, email, password } = req.body ?? {};
 
-    return res.status(201).json({ id: r.rows[0].id });
-  } catch (e: any) {
-    if (String(e?.message ?? "").includes("duplicate")) {
-      return res.status(409).json({ error: "email_exists" });
+    const trimmedName =
+      typeof name === "string" && name.trim().length > 0 ? name.trim() : null;
+
+    const trimmedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
+    const rawPassword = typeof password === "string" ? password : "";
+
+    if (!trimmedEmail || !rawPassword) {
+      return res.status(400).json({
+        error: "invalid_payload",
+        message: "E-mail e senha são obrigatórios.",
+      });
     }
-    return res.status(500).json({ error: "internal_error" });
+
+    const strongPassword =
+      rawPassword.length >= 8 &&
+      /[A-Z]/.test(rawPassword) &&
+      /\d/.test(rawPassword) &&
+      /[@$!%*?&]/.test(rawPassword);
+
+    if (!strongPassword) {
+      return res.status(400).json({
+        error: "weak_password",
+        message:
+          "Use pelo menos 8 caracteres, 1 letra maiúscula, 1 número e 1 símbolo.",
+      });
+    }
+
+    const hash = await bcrypt.hash(rawPassword, 10);
+    const role: UserRole = "user";
+
+    try {
+      const r = await db.query<{ id: number }>(
+        "INSERT INTO users(name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id",
+        [trimmedName, trimmedEmail, hash, role]
+      );
+
+      return res.status(201).json({ id: r.rows[0].id });
+    } catch (e: any) {
+      if (String(e?.message ?? "").includes("duplicate")) {
+        return res.status(409).json({
+          error: "email_exists",
+          message: "E-mail já cadastrado.",
+        });
+      }
+      console.error("Erro ao registrar usuário:", e);
+      return res.status(500).json({
+        error: "internal_error",
+        message: "Erro interno ao registrar usuário.",
+      });
+    }
+  } catch (err) {
+    console.error("Erro inesperado em /auth/register:", err);
+    return res.status(500).json({
+      error: "internal_error",
+      message: "Erro inesperado ao registrar usuário.",
+    });
   }
 });
 
 authRouter.post("/login", async (req: Request, res: Response) => {
   const { email, password } = req.body ?? {};
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "invalid_payload" });
+  const trimmedEmail =
+    typeof email === "string" ? email.trim().toLowerCase() : "";
+  const rawPassword = typeof password === "string" ? password : "";
+
+  if (!trimmedEmail || !rawPassword) {
+    return res.status(400).json({
+      error: "invalid_payload",
+      message: "E-mail e senha são obrigatórios.",
+    });
   }
 
   const r = await db.query<{
@@ -69,18 +115,24 @@ authRouter.post("/login", async (req: Request, res: Response) => {
     FROM users
     WHERE email = $1
     `,
-    [email]
+    [trimmedEmail]
   );
 
   if (!r.rows.length) {
-    return res.status(401).json({ error: "invalid_credentials" });
+    return res.status(401).json({
+      error: "invalid_credentials",
+      message: "Credenciais inválidas.",
+    });
   }
 
   const dbUser = r.rows[0];
 
-  const ok = await bcrypt.compare(password, dbUser.password_hash);
+  const ok = await bcrypt.compare(rawPassword, dbUser.password_hash);
   if (!ok) {
-    return res.status(401).json({ error: "invalid_credentials" });
+    return res.status(401).json({
+      error: "invalid_credentials",
+      message: "Credenciais inválidas.",
+    });
   }
 
   const payload = {
@@ -90,7 +142,6 @@ authRouter.post("/login", async (req: Request, res: Response) => {
   };
 
   const secret: Secret = process.env.JWT_SECRET || "dev-secret";
-
   const expiresIn = Number(process.env.JWT_EXPIRES ?? 900);
 
   const token = jwt.sign(payload, secret, { expiresIn });
@@ -108,6 +159,190 @@ authRouter.post("/login", async (req: Request, res: Response) => {
     },
   });
 });
+
+authRouter.post("/forgot-password", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body ?? {};
+    const trimmed = typeof email === "string" ? email.trim().toLowerCase() : "";
+
+    if (!trimmed || !trimmed.includes("@")) {
+      return res.status(400).json({ message: "E-mail inválido." });
+    }
+
+    const r = await db.query<{ id: number }>(
+      "SELECT id FROM users WHERE email = $1",
+      [trimmed]
+    );
+
+    if (!r.rows.length) {
+      return res.json({ ok: true });
+    }
+
+    const userId = r.rows[0].id;
+
+    const resetToken = jwt.sign(
+      { sub: userId, type: "reset" },
+      process.env.JWT_SECRET || "dev-secret",
+      { expiresIn: "15m" }
+    );
+
+    const devMode = process.env.NODE_ENV !== "production";
+
+    return res.json({
+      ok: true,
+      ...(devMode ? { devToken: resetToken } : {}),
+    });
+  } catch (err) {
+    console.error("Erro forgot-password:", err);
+    return res
+      .status(500)
+      .json({ message: "Erro interno ao solicitar redefinição." });
+  }
+});
+
+type ResetPayload = JwtPayload & {
+  sub: number | string;
+  type?: string;
+};
+
+authRouter.post("/reset-password", async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body ?? {};
+    const rawToken = typeof token === "string" ? token.trim() : "";
+    const rawPassword = typeof password === "string" ? password : "";
+
+    if (!rawToken) {
+      return res.status(400).json({ message: "Token é obrigatório." });
+    }
+
+    const strongPassword =
+      rawPassword.length >= 8 &&
+      /[A-Z]/.test(rawPassword) &&
+      /\d/.test(rawPassword) &&
+      /[@$!%*?&]/.test(rawPassword);
+
+    if (!strongPassword) {
+      return res.status(400).json({
+        message:
+          "Use pelo menos 8 caracteres, 1 letra maiúscula, 1 número e 1 símbolo.",
+      });
+    }
+
+    const secret: Secret = process.env.JWT_SECRET || "dev-secret";
+
+    let decoded: ResetPayload;
+    try {
+      decoded = jwt.verify(rawToken, secret) as ResetPayload;
+    } catch (err) {
+      console.error("Erro ao validar token de reset:", err);
+      return res.status(400).json({ message: "Token inválido ou expirado." });
+    }
+
+    if (!decoded.sub || decoded.type !== "reset") {
+      return res
+        .status(400)
+        .json({ message: "Token inválido ou não reconhecido." });
+    }
+
+    const userId = Number(decoded.sub);
+    if (!Number.isFinite(userId)) {
+      return res.status(400).json({ message: "Token inválido." });
+    }
+
+    const hash = await bcrypt.hash(rawPassword, 10);
+
+    const updateResult = await db.query(
+      `
+        UPDATE users
+        SET password_hash = $1, updated_at = NOW()
+        WHERE id = $2
+        RETURNING id
+        `,
+      [hash, userId]
+    );
+
+    if (!updateResult.rows.length) {
+      return res.status(404).json({ message: "Usuário não encontrado." });
+    }
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro em /auth/reset-password:", err);
+    return res
+      .status(500)
+      .json({ message: "Erro interno ao redefinir a senha." });
+  }
+});
+
+authRouter.post(
+  "/change-password",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autenticado." });
+      }
+
+      const { currentPassword, newPassword } = req.body ?? {};
+      const current =
+        typeof currentPassword === "string" ? currentPassword.trim() : "";
+      const next = typeof newPassword === "string" ? newPassword.trim() : "";
+
+      if (!current || !next) {
+        return res.status(400).json({
+          message: "Senha atual e nova senha são obrigatórias.",
+        });
+      }
+
+      const strongPassword =
+        next.length >= 8 &&
+        /[A-Z]/.test(next) &&
+        /\d/.test(next) &&
+        /[@$!%*?&]/.test(next);
+
+      if (!strongPassword) {
+        return res.status(400).json({
+          message:
+            "Use pelo menos 8 caracteres, 1 letra maiúscula, 1 número e 1 símbolo.",
+        });
+      }
+
+      const r = await db.query<{
+        id: number;
+        password_hash: string;
+      }>("SELECT id, password_hash FROM users WHERE id = $1", [req.user.id]);
+
+      if (!r.rows.length) {
+        return res.status(404).json({ message: "Usuário não encontrado." });
+      }
+
+      const dbUser = r.rows[0];
+
+      const ok = await bcrypt.compare(current, dbUser.password_hash);
+      if (!ok) {
+        return res.status(401).json({ message: "Senha atual incorreta." });
+      }
+
+      const newHash = await bcrypt.hash(next, 10);
+
+      await db.query(
+        `
+        UPDATE users
+        SET password_hash = $1, updated_at = NOW()
+        WHERE id = $2
+        `,
+        [newHash, dbUser.id]
+      );
+
+      return res.json({ ok: true });
+    } catch (err) {
+      console.error("Erro em /auth/change-password:", err);
+      return res
+        .status(500)
+        .json({ message: "Erro interno ao alterar a senha." });
+    }
+  }
+);
 
 authRouter.get("/me", authMiddleware, (req: AuthRequest, res: Response) => {
   if (!req.user) {

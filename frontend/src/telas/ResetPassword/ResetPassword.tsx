@@ -62,12 +62,12 @@ export default function ResetPasswordScreen() {
       setLoading(true);
 
       if (isLoggedInMode) {
-        await api.post("/users/change-password", {
+        await api.post("/auth/change-password", {
           currentPassword: (currentPassword ?? "").trim(),
           newPassword: p,
         });
       } else {
-        await api.post("/users/reset-password", {
+        await api.post("/auth/reset-password", {
           token: token.trim(),
           password: p,
         });
