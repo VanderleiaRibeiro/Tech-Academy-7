@@ -12,6 +12,7 @@ export interface User {
   id: number;
   name: string | null;
   email: string;
+  role: "admin" | "user";
   url_img?: string | null;
   description?: string | null;
   createdAt?: string;

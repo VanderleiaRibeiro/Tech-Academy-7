@@ -16,7 +16,7 @@ export default function ForgotPasswordScreen() {
       return;
     }
     try {
-      const { data } = await api.post<ForgotResp>("/users/forgot-password", {
+      const { data } = await api.post<ForgotResp>("/auth/forgot-password", {
         email: e,
       });
 
