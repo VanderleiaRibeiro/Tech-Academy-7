@@ -1,0 +1,11 @@
+Availability:
+  SLO: 99.5% monthly
+  SLI: successful_requests / total_requests
+
+Latency:
+  SLO: p95 < 500ms
+  SLI: api_response_time_p95_ms
+
+Durability:
+  SLO: 99.9% backups valid
+  SLI: valid_backups / total_backups
