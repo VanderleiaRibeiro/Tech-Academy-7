@@ -6,7 +6,16 @@ import { authMiddleware, AuthRequest } from "../middleware/authMiddleware.js";
 
 export const habitsRouter = Router();
 
+// Redis para cache
 const redis = new Redis(
+  process.env.REDIS_URL ||
+    `redis://${process.env.REDIS_HOST || "redis"}:${
+      process.env.REDIS_PORT || 6379
+    }`
+);
+
+// Redis para mensageria (Pub/Sub)
+const pub = new Redis(
   process.env.REDIS_URL ||
     `redis://${process.env.REDIS_HOST || "redis"}:${
       process.env.REDIS_PORT || 6379
@@ -69,7 +78,19 @@ habitsRouter.post("/", authMiddleware, async (req: AuthRequest, res) => {
     [userId, name.trim(), description || null]
   );
 
+  // Invalida cache
   await redis.del(cacheKey(userId));
+
+  // Publica evento
+  await pub.publish(
+    "habit.events",
+    JSON.stringify({
+      type: "habit.created",
+      habitId: r.rows[0].id,
+      userId,
+      timestamp: Date.now(),
+    })
+  );
 
   return res.status(201).json(r.rows[0]);
 });
@@ -104,7 +125,19 @@ habitsRouter.put("/:id", authMiddleware, async (req: AuthRequest, res) => {
     return res.status(404).json({ error: "habit_not_found" });
   }
 
+  // Invalida cache
   await redis.del(cacheKey(userId));
+
+  // Evento
+  await pub.publish(
+    "habit.events",
+    JSON.stringify({
+      type: "habit.updated",
+      habitId: r.rows[0].id,
+      userId,
+      timestamp: Date.now(),
+    })
+  );
 
   return res.json(r.rows[0]);
 });
@@ -126,7 +159,19 @@ habitsRouter.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
     return res.status(404).json({ error: "habit_not_found" });
   }
 
+  // Invalidar cache
   await redis.del(cacheKey(userId));
+
+  // Evento
+  await pub.publish(
+    "habit.events",
+    JSON.stringify({
+      type: "habit.deleted",
+      habitId: id,
+      userId,
+      timestamp: Date.now(),
+    })
+  );
 
   return res.status(204).send();
 });
