@@ -101,6 +101,7 @@ recordsRouter.post(
       [userId, habitId, date, completed]
     );
 
+    // publicação de eventos pelo Records
     await redis.publish(
       "records.created",
       JSON.stringify({ userId, habitId, date, completed })
