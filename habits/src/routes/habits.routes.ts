@@ -32,6 +32,7 @@ habitsRouter.get("/", authMiddleware, async (req: AuthRequest, res) => {
   const userId = req.user!.id;
   const key = cacheKey(userId);
 
+  // cache
   const cached = await redis.get(key);
   if (cached) {
     console.log("CACHE HIT", key);
@@ -81,6 +82,7 @@ habitsRouter.post("/", authMiddleware, async (req: AuthRequest, res) => {
   // Invalida cache
   await redis.del(cacheKey(userId));
 
+  //MENSAGERIA
   // Publica evento
   await pub.publish(
     "habit.events",
