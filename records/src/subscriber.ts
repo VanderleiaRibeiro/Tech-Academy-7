@@ -13,7 +13,7 @@ export function setupSubscriber() {
   });
 
   sub.on("message", (channel, message) => {
-    console.log("\n🔥 EVENTO RECEBIDO NO RECORDS");
+    console.log("\nEVENTO RECEBIDO NO RECORDS");
     console.log("Canal:", channel);
     console.log("Mensagem:", message);
     console.log("--------------------\n");
