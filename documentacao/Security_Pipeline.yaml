@@ -1,0 +1,6 @@
+CI/CD Security Gates:
+  - SAST: npm audit, sonarqube
+  - SCA: OSS dependency scanning (e.g. GitHub Dependabot)
+  - Secrets: git-secrets scanning
+  - Container: Docker image scanning (trivy)
+  - Compliance: License compliance check

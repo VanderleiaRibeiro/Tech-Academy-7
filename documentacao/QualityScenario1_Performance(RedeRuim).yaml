@@ -1,0 +1,33 @@
+scenarios:
+  - name: Scenario:Marcação de hábito em condições adversas
+    source: Usuário do app mobile
+    stimulus: Usuário marca um hábito como concluído
+    environment: Rede 3G com latência média de 500ms
+    Artifact: Aplicação mobile (camada de UI + módulo de sync)
+    response:
+      ui: Ação registrada localmente em até 200ms
+      sync: Sincronização em background
+    measure:
+      backend_sync_p95: <= 2 segundos
+
+  - name: Availability - Pico de acesso às 07h
+    source: 1000 usuários simultâneos
+    stimulus: Acessam a API para obter hábitos do dia
+    environment: Horário de pico em produção
+    Artifact: API e infraestrutura de backend
+    response:
+      api: Mantém estabilidade e responde majoritariamente em <1s
+    measure:
+      response_time_p95: <= 1 segundo
+      uptime: >= 99.5%
+
+  - name: Security - Tentativa de acesso indevido
+    source: Cliente sem autenticação válida
+    stimulus: Requisição sem token JWT ou com token inválido
+    environment: Ambiente de produção
+    Artifact: Middleware de autenticação
+    response:
+      rejection: Rejeitar a requisição (401 Unauthorized)
+      logging: Evento registrado como tentativa inválida
+    measure:
+      unauthorized_block_rate: 100%
